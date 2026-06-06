@@ -35,19 +35,19 @@ public class CategoriaGraphQLController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public CategoriaResponse crearCategoria(@Argument @Valid CategoriaRequest input) {
         return categoriaService.create(input);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public CategoriaResponse actualizarCategoria(@Argument Long id, @Argument @Valid CategoriaRequest input) {
         return categoriaService.update(id, input);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public Boolean eliminarCategoria(@Argument Long id) {
         categoriaService.delete(id);
         return true;

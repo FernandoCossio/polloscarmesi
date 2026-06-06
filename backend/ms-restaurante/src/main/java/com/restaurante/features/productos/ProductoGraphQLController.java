@@ -37,19 +37,19 @@ public class ProductoGraphQLController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public ProductoResponse crearProducto(@Argument @Valid ProductoRequest input) {
         return productoService.create(input);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public ProductoResponse actualizarProducto(@Argument Long id, @Argument @Valid ProductoRequest input) {
         return productoService.update(id, input);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public ProductoResponse actualizarDisponibilidadProducto(@Argument Long id, @Argument Boolean disponible) {
         if (disponible == null) {
             throw new IllegalArgumentException("El campo 'disponible' es obligatorio");
@@ -58,13 +58,13 @@ public class ProductoGraphQLController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public ProductoResponse subirImagenProducto(@Argument Long id, @Argument MultipartFile file) throws IOException {
         return productoService.uploadImage(id, file);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     public Boolean eliminarProducto(@Argument Long id) {
         productoService.delete(id);
         return true;
