@@ -1,0 +1,51 @@
+scalar Upload
+
+type Query {
+  # Menú / Productos
+  obtenerMenu(categoriaId: ID): [Producto!]!
+  obtenerProducto(id: ID!): Producto
+
+  # Categorías
+  obtenerCategorias: [Categoria!]!
+  obtenerCategoriaPorId(id: ID!): Categoria
+}
+
+type Mutation {
+  # Categorías
+  crearCategoria(input: CategoriaInput!): Categoria!
+  actualizarCategoria(id: ID!, input: CategoriaInput!): Categoria!
+  eliminarCategoria(id: ID!): Boolean!
+
+  # Productos
+  crearProducto(input: ProductoInput!): Producto!
+  actualizarProducto(id: ID!, input: ProductoInput!): Producto!
+  actualizarDisponibilidadProducto(id: ID!, disponible: Boolean!): Producto!
+  subirImagenProducto(id: ID!, file: Upload!): Producto!
+  eliminarProducto(id: ID!): Boolean!
+}
+
+input CategoriaInput {
+  nombre: String!
+}
+
+input ProductoInput {
+  nombre: String!
+  descripcion: String
+  precio: Float!
+  categoriaId: ID!
+}
+
+type Producto {
+  id: ID!
+  nombre: String!
+  descripcion: String
+  precio: Float!
+  categoria: Categoria!
+  imagenUrl: String
+  disponible: Boolean!
+}
+
+type Categoria {
+  id: ID!
+  nombre: String!
+}

@@ -49,6 +49,18 @@ public enum ErrorCode {
     ROL_NO_ENCONTRADO("ROL101", HttpStatus.NOT_FOUND, "Rol no encontrado"),
     
     // -------------------------------------------------------------------------
+    // CAT — Categorías
+    // -------------------------------------------------------------------------
+    CATEGORIA_NO_ENCONTRADA("CAT101", HttpStatus.NOT_FOUND, "Categoría no encontrada"),
+    CATEGORIA_DUPLICADA("CAT201", HttpStatus.CONFLICT, "El nombre de la categoría ya existe"),
+
+    // -------------------------------------------------------------------------
+    // PRD — Productos
+    // -------------------------------------------------------------------------
+    PRODUCTO_NO_ENCONTRADO("PRD101", HttpStatus.NOT_FOUND, "Producto no encontrado"),
+    PRODUCTO_DUPLICADA("PRD201", HttpStatus.CONFLICT, "El nombre del producto ya existe"),
+
+    // -------------------------------------------------------------------------
     // VAL — Validación de campos
     // -------------------------------------------------------------------------
     VALIDACION_CAMPO("VAL301", HttpStatus.BAD_REQUEST, "Error de validación en la solicitud"),
