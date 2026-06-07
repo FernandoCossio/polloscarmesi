@@ -33,8 +33,8 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/swagger-ui.html",
 					"/uploads/**",
-					"/graphql",
-					"/graphiql"
+					"/graphiql",
+					"/graphql"
 				).permitAll()
 				.anyRequest().authenticated()
 			)
