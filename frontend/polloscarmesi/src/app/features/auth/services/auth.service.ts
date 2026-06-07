@@ -8,6 +8,7 @@ import type { LoginRequest } from '../interfaces/login-request.interface';
 import type { RegisterRequest } from '../interfaces/register-request.interface';
 import type { ResponseUsuarioDto } from '../interfaces/response-usuario-dto.interface';
 import type { TokenResponse } from '../interfaces/token-response.interface';
+import { environment } from '@/environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +16,7 @@ import type { TokenResponse } from '../interfaces/token-response.interface';
 export class AuthService {
     private readonly http = inject(HttpClient);
 
-    private readonly apiBaseUrl = 'http://localhost:8080/api';
+    private readonly apiBaseUrl = environment.apiUrl;
     private readonly accessTokenKey = 'access_token';
 
     login(request: LoginRequest): Observable<TokenResponse> {
