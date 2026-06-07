@@ -11,6 +11,11 @@ export const appRoutes: Routes = [
         component: AppLayout,
         children: [
             { path: '', component: Dashboard, canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)] },
+            { 
+                path: 'categorias', 
+                loadComponent: () => import('./app/features/categoria/pages/list/list').then(m => m.List),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            }
         ]
     },
     { path: 'auth', loadChildren: () => import('./app/features/auth/auth.routes') },

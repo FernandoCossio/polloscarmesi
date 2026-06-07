@@ -1,0 +1,87 @@
+<p-dialog 
+    [header]="categoria ? 'Editar Categoría' : 'Nueva Categoría'" 
+    [(visible)]="visible" 
+    [modal]="true" 
+    [closable]="true"
+    [style]="{ width: '450px' }"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="close()">
+    
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+        <!-- Nombre -->
+        <div class="flex flex-col gap-2">
+            <label for="nombre" class="font-semibold text-surface-700 dark:text-surface-300">Nombre *</label>
+            <input 
+                pInputText 
+                id="nombre" 
+                formControlName="nombre" 
+                placeholder="Ej. Bebidas Calientes" 
+                class="w-full"
+                [class.ng-invalid]="form.get('nombre')?.invalid && form.get('nombre')?.touched"
+                [class.ng-dirty]="form.get('nombre')?.invalid && form.get('nombre')?.touched"
+            />
+            <small *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched" class="text-red-500">
+                El nombre es obligatorio y debe tener al menos 3 caracteres.
+            </small>
+        </div>
+
+        <!-- Descripción -->
+        <div class="flex flex-col gap-2">
+            <label for="descripcion" class="font-semibold text-surface-700 dark:text-surface-300">Descripción</label>
+            <textarea 
+                pTextarea 
+                id="descripcion" 
+                formControlName="descripcion" 
+                rows="3" 
+                placeholder="Describa brevemente la categoría..." 
+                class="w-full resize-none"
+            ></textarea>
+        </div>
+
+        <!-- Icon Selector via p-select -->
+        <div class="flex flex-col gap-2">
+            <label for="icon" class="font-semibold text-surface-700 dark:text-surface-300">Ícono representativo</label>
+            <p-select 
+                id="icon"
+                formControlName="icon" 
+                [options]="iconosList" 
+                optionLabel="nombre" 
+                optionValue="icono"
+                class="w-full"
+                placeholder="Seleccione un ícono"
+                appendTo="body">
+                <ng-template #selectedItem let-selectedOption>
+                    <div class="flex items-center gap-2" *ngIf="selectedOption">
+                        <span class="material-symbols-outlined text-xl">{{ selectedOption.icono }}</span>
+                        <span class="font-medium">{{ selectedOption.nombre }}</span>
+                    </div>
+                </ng-template>
+                <ng-template #item let-option>
+                    <div class="flex items-center gap-2 py-1">
+                        <span class="material-symbols-outlined text-xl">{{ option.icono }}</span>
+                        <span>{{ option.nombre }}</span>
+                    </div>
+                </ng-template>
+            </p-select>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end gap-2 mt-4">
+            <button 
+                pButton 
+                type="button" 
+                label="Cancelar" 
+                class="p-button-text p-button-secondary" 
+                (click)="close()">
+            </button>
+            <button 
+                pButton 
+                type="submit" 
+                label="Guardar" 
+                [disabled]="form.invalid" 
+                class="p-button-primary">
+            </button>
+        </div>
+    </form>
+</p-dialog>

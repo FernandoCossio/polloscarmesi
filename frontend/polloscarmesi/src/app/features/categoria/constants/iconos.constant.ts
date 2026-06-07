@@ -1,0 +1,22 @@
+export const ICONOS_CATEGORIA = [
+  { icono: 'restaurant', nombre: 'General' },
+  { icono: 'lunch_dining', nombre: 'Pollos' },
+  { icono: 'dinner_dining', nombre: 'Platos Principales' },
+  { icono: 'restaurant_menu', nombre: 'Menú Ejecutivo' },
+  { icono: 'ramen_dining', nombre: 'Sopas y Caldos' },
+  { icono: 'fastfood', nombre: 'Comida Rápida' },
+  { icono: 'local_pizza', nombre: 'Pizzas' },
+  { icono: 'bakery_dining', nombre: 'Panadería' },
+  { icono: 'icecream', nombre: 'Postres' },
+  { icono: 'cake', nombre: 'Tortas y Pasteles' },
+  { icono: 'emoji_food_beverage', nombre: 'Bebidas' },
+  { icono: 'local_cafe', nombre: 'Bebidas Calientes' },
+  { icono: 'liquor', nombre: 'Licores' },
+  { icono: 'local_bar', nombre: 'Cócteles' },
+  { icono: 'wine_bar', nombre: 'Vinos' },
+  { icono: 'local_drink', nombre: 'Refrescos' },
+  { icono: 'egg', nombre: 'Desayunos' },
+  { icono: 'set_meal', nombre: 'Combos' },
+  { icono: 'takeout_dining', nombre: 'Para Llevar' },
+  { icono: 'restaurant', nombre: 'Entradas' }
+];

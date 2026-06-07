@@ -1,0 +1,21 @@
+<div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
+    <div class="w-full sm:w-80">
+        <p-iconfield>
+            <p-inputicon class="pi pi-search"></p-inputicon>
+            <input 
+                pInputText 
+                type="text" 
+                placeholder="Buscar categoría..." 
+                class="w-full"
+                (input)="onSearchInput($event)"
+            />
+        </p-iconfield>
+    </div>
+    <button 
+        pButton 
+        type="button" 
+        label="Nueva Categoría" 
+        icon="pi pi-plus" 
+        (click)="newCategoryClick.emit()"
+    ></button>
+</div>
