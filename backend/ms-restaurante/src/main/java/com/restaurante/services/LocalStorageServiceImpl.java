@@ -1,5 +1,7 @@
 package com.restaurante.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,52 +10,64 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
 public class LocalStorageServiceImpl implements ImageStorageService {
 
-    @Value("${app.upload.dir}")
+    private static final Logger logger = LoggerFactory.getLogger(LocalStorageServiceImpl.class);
+
+    @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
 
     @Override
     public String store(MultipartFile file) throws IOException {
+        return store(file, new StorageOptions("uploads"));
+    }
+
+    @Override
+    public String store(MultipartFile file, StorageOptions options) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("No se puede guardar un archivo vacío");
         }
 
-        // Crear directorio si no existe
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
+        String directoryPrefix = options.directoryPrefix() != null ? options.directoryPrefix() : "uploads";
 
-        // Generar nombre de archivo único
+        String datePath = DateTimeFormatter.ofPattern("yyyy/MM")
+                .withZone(ZoneId.systemDefault())
+                .format(Instant.now());
+
         String originalFilename = file.getOriginalFilename();
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
-        String fileName = UUID.randomUUID().toString() + extension;
+        String fileName = UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + extension;
 
-        Path targetPath = uploadPath.resolve(fileName);
+        String relativePath = directoryPrefix + "/" + datePath + "/" + fileName;
+        Path targetPath = Paths.get(uploadDir).resolve(directoryPrefix).resolve(datePath).resolve(fileName);
+
+        Files.createDirectories(targetPath.getParent());
         Files.copy(file.getInputStream(), targetPath);
 
-        // Retornamos el path relativo esperado por la aplicación/frontend
-        return "uploads/" + fileName;
+        logger.info("Archivo guardado localmente: {}", targetPath);
+        return relativePath;
     }
 
     @Override
     public void delete(String fileUrl) throws IOException {
-        if (fileUrl == null || !fileUrl.startsWith("uploads/")) {
+        if (fileUrl == null || fileUrl.isBlank()) {
             return;
         }
 
-        String fileName = fileUrl.replaceFirst("^uploads/", "");
-        Path filePath = Paths.get(uploadDir).resolve(fileName);
+        Path filePath = Paths.get(uploadDir).resolve(fileUrl);
 
         if (Files.exists(filePath)) {
             Files.delete(filePath);
+            logger.info("Archivo eliminado localmente: {}", filePath);
         }
     }
 }
