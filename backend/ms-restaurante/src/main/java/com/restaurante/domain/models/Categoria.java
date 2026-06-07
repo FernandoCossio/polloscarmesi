@@ -27,4 +27,8 @@ public class Categoria extends BaseEntity {
 
     @Column(nullable = false, unique = true)
     private String nombre;
+
+    private String descripcion;
+
+    private String icon;
 }

@@ -41,6 +41,8 @@ public class CategoriaService {
 
         Categoria categoria = new Categoria();
         categoria.setNombre(request.getNombre());
+        categoria.setDescripcion(request.getDescripcion());
+        categoria.setIcon(request.getIcon());
 
         Categoria saved = categoriaRepository.save(categoria);
         return mapToResponse(saved);
@@ -59,6 +61,8 @@ public class CategoriaService {
                 });
 
         categoria.setNombre(request.getNombre());
+        categoria.setDescripcion(request.getDescripcion());
+        categoria.setIcon(request.getIcon());
         Categoria updated = categoriaRepository.save(categoria);
         return mapToResponse(updated);
     }
@@ -76,7 +80,9 @@ public class CategoriaService {
     public CategoriaResponse mapToResponse(Categoria categoria) {
         return new CategoriaResponse(
                 categoria.getId(),
-                categoria.getNombre()
+                categoria.getNombre(),
+                categoria.getDescripcion(),
+                categoria.getIcon()
         );
     }
 }

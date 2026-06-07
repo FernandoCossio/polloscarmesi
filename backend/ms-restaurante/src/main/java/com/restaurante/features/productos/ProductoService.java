@@ -136,7 +136,9 @@ public class ProductoService {
             Categoria cat = producto.getCategoria();
             catResponse = new CategoriaResponse(
                     cat.getId(),
-                    cat.getNombre()
+                    cat.getNombre(),
+                    cat.getDescripcion(),
+                    cat.getIcon()
             );
         }
 

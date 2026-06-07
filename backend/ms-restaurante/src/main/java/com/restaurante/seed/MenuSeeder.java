@@ -27,14 +27,20 @@ public class MenuSeeder implements CommandLineRunner {
             // Seeding Categoria
             Categoria pollos = new Categoria();
             pollos.setNombre("Pollos");
+            pollos.setDescripcion("Deliciosos pollos a la brasa con el sabor único de la casa");
+            pollos.setIcon("lunch_dining");
             pollos = categoriaRepository.save(pollos);
 
             Categoria bebidas = new Categoria();
             bebidas.setNombre("Bebidas");
+            bebidas.setDescripcion("Bebidas y refrescos para acompañar tu comida");
+            bebidas.setIcon("emoji_food_beverage");
             bebidas = categoriaRepository.save(bebidas);
 
             Categoria guarniciones = new Categoria();
             guarniciones.setNombre("Guarniciones");
+            guarniciones.setDescripcion("Acompañamientos perfectos para tu pollo");
+            guarniciones.setIcon("restaurant");
             guarniciones = categoriaRepository.save(guarniciones);
 
             // Seeding Productos

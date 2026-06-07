@@ -15,4 +15,6 @@ import java.util.UUID;
 public class CategoriaResponse {
     private Long id;
     private String nombre;
+    private String descripcion;
+    private String icon;
 }

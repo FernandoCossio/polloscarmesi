@@ -14,4 +14,8 @@ public class CategoriaRequest {
 
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+
+    private String descripcion;
+
+    private String icon;
 }
