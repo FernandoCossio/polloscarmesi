@@ -26,6 +26,8 @@ type Mutation {
 
 input CategoriaInput {
   nombre: String!
+  descripcion: String
+  icon: String
 }
 
 input ProductoInput {
@@ -48,4 +50,6 @@ type Producto {
 type Categoria {
   id: ID!
   nombre: String!
+  descripcion: String
+  icon: String
 }
