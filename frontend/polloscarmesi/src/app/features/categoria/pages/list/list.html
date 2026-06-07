@@ -1,0 +1,51 @@
+<div class="card p-6 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
+    <!-- Header Component -->
+    <app-categoria-header></app-categoria-header>
+
+    <!-- Filter Component -->
+    <app-categoria-filter 
+        (searchChange)="onSearch($event)" 
+        (newCategoryClick)="onNewCategory()">
+    </app-categoria-filter>
+
+    <!-- Category Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6 flex-1">
+        @for (categoria of paginatedCategorias(); track categoria.id) {
+            <app-categoria-card 
+                [categoria]="categoria" 
+                (edit)="onEdit($event)"
+                (delete)="onDelete($event)">
+            </app-categoria-card>
+        } @empty {
+            <div class="col-span-full flex flex-col items-center justify-center py-12 text-surface-500 dark:text-surface-400">
+                <i class="pi pi-inbox text-4xl mb-3 text-surface-300"></i>
+                <p class="m-0 font-medium text-lg">No se encontraron categorías.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Paginator Footer -->
+    <div class="border-t border-surface-200 dark:border-surface-800 pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <span class="text-sm font-medium text-surface-500 dark:text-surface-400">
+            Mostrando {{ getStartIndex() }} a {{ getEndIndex() }} de {{ filteredCategorias().length }} categorías
+        </span>
+        <p-paginator 
+            [rows]="rows()" 
+            [totalRecords]="filteredCategorias().length" 
+            [first]="first()"
+            (onPageChange)="onPageChange($event)"
+            [showFirstLastIcon]="false">
+        </p-paginator>
+    </div>
+</div>
+
+<!-- Category Form Dialog Component -->
+<app-categoria-form 
+    [(visible)]="formVisible" 
+    [categoria]="selectedCategoria()"
+    (save)="onSave($event)">
+</app-categoria-form>
+
+<!-- Dialog notification support -->
+<p-toast></p-toast>
+<p-confirmdialog></p-confirmdialog>

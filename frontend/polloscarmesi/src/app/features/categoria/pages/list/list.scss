@@ -1,0 +1,31 @@
+// Styles for CategoriaListComponent
+.card {
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+}
+
+::ng-deep {
+  .p-paginator {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+
+    .p-paginator-page {
+      border-radius: var(--p-border-radius-md);
+      transition: background-color 0.2s;
+      min-width: 2.5rem;
+      height: 2.5rem;
+
+      &.p-highlight {
+        background: var(--p-primary-color) !important;
+        color: var(--p-primary-contrast-color) !important;
+      }
+    }
+
+    .p-paginator-prev, .p-paginator-next {
+      min-width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+}
