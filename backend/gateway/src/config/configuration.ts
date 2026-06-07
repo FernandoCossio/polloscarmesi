@@ -1,5 +1,8 @@
+import { Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+
+const logger = new Logger('Configuration');
 
 export default () => {
   // Read public key from file
@@ -10,7 +13,7 @@ export default () => {
     const fullPath = path.resolve(process.cwd(), publicKeyPath);
     publicKey = fs.readFileSync(fullPath, 'utf8');
   } catch (error) {
-    console.warn('Warning: Could not read JWT public key file:', error);
+    logger.warn(`Could not read JWT public key file: ${error.message}`);
   }
   
   return {
@@ -21,13 +24,13 @@ export default () => {
     },
     microservices: {
       ms1: {
-        graphqlUrl: process.env.MS1_GRAPHQL_URL || 'http://localhost:4001/graphql',
+        graphqlUrl: process.env.MS1_GRAPHQL_URL || 'http://localhost:8082/api/graphql',
       },
       ms2: {
-        graphqlUrl: process.env.MS2_GRAPHQL_URL || 'http://localhost:4002/graphql',
+        graphqlUrl: process.env.MS2_GRAPHQL_URL || 'http://localhost:3001/graphql',
       },
       ms3: {
-        graphqlUrl: process.env.MS3_GRAPHQL_URL || 'http://localhost:4003/graphql',
+        graphqlUrl: process.env.MS3_GRAPHQL_URL || 'http://localhost:3002/graphql',
       },
     },
     schemaPollInterval: parseInt(process.env.SCHEMA_POLL_INTERVAL_MS || '30000', 10),

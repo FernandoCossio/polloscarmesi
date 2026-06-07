@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall } from '@aws-sdk/util-dynamodb';
 
 @Injectable()
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
   private client: DynamoDBClient;
   private tableName: string;
 
@@ -47,7 +48,7 @@ export class AuditService {
     try {
       await this.client.send(command);
     } catch (error) {
-      console.error('Error logging audit event:', error);
+      this.logger.error('Error logging audit event:', error.stack);
     }
   }
 }

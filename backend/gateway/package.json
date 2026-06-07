@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
+    "@as-integrations/express5": "^1.1.2",
     "@aws-sdk/client-dynamodb": "^3.1063.0",
     "@aws-sdk/util-dynamodb": "^3.996.3",
     "@graphql-tools/executor-http": "^3.3.0",
@@ -34,16 +35,16 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/graphql": "^13.4.2",
-    "@nestjs/jwt": "^11.0.2",
-    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.4.4",
     "axios": "^1.17.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "cross-env": "^10.1.0",
     "graphql": "^16.14.1",
-    "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

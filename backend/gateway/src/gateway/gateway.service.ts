@@ -1,64 +1,79 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { stitchSchemas } from '@graphql-tools/stitch';
-import { wrapSchema } from '@graphql-tools/wrap';
+import { wrapSchema, schemaFromExecutor } from '@graphql-tools/wrap';
 import { buildHTTPExecutor } from '@graphql-tools/executor-http';
-import { GraphQLSchema } from 'graphql';
-
-// Import introspectSchema with type assertion
-const { introspectSchema } = require('@graphql-tools/wrap') as any;
+import { GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 
 @Injectable()
-export class GatewayService implements OnModuleInit, OnModuleDestroy {
+export class GatewayService implements OnModuleDestroy {
+  private readonly logger = new Logger(GatewayService.name);
   private schema: GraphQLSchema;
   private pollInterval: NodeJS.Timeout;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    const Query = new GraphQLObjectType({
+      name: 'Query',
+      fields: {
+        gatewayStatus: {
+          type: GraphQLString,
+          resolve: () => 'Gateway running...',
+        },
+      },
+    });
+    this.schema = new GraphQLSchema({ query: Query });
+  }
 
-  async onModuleInit() {
-    await this.loadSchemas();
+  async initialize(): Promise<void> {
+    let loaded = false;
+    while (!loaded) {
+      try {
+        await this.loadSchemas();
+        loaded = true;
+      } catch (error) {
+        this.logger.warn(`MS1 offline, reintentando en 3s... - ${error.message}`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
     this.startSchemaPolling();
   }
 
   onModuleDestroy() {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-    }
+    if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
-  private async loadSchemas() {
+  async loadSchemas() {
     const ms1GraphqlUrl = this.configService.get<string>('microservices.ms1.graphqlUrl');
-    if (!ms1GraphqlUrl) {
-      throw new InternalServerErrorException('MS1_GRAPHQL_URL is not configured');
-    }
+    if (!ms1GraphqlUrl) throw new Error('MS1_GRAPHQL_URL is not configured');
 
-    // Create executor with type assertion to bypass TypeScript checks
+    this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
+
     const executor = buildHTTPExecutor({
       endpoint: ms1GraphqlUrl,
-      // @ts-ignore
       headers: ({ context }: any) => {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (context?.req?.headers?.authorization) {
           headers['Authorization'] = context.req.headers.authorization;
         }
-        
         return headers;
       },
-    }) as any;
-
-    const schema = await introspectSchema(executor);
-
-    const remoteSchema = wrapSchema({
-      schema,
-      executor,
     });
+
+    const remoteSchema = await schemaFromExecutor(executor);
+
+    this.logger.debug(
+      `Campos detectados en MS1: ${Object.keys(remoteSchema.getQueryType()?.getFields() ?? {})}`,
+    );
+
+    const wrappedSchema = wrapSchema({ schema: remoteSchema, executor });
 
     this.schema = stitchSchemas({
-      subschemas: [remoteSchema],
+      subschemas: [{ schema: wrappedSchema, executor }],
     });
+
+    this.logger.debug(
+      `Schema listo: ${Object.keys(this.schema.getQueryType()?.getFields() ?? {})}`,
+    );
   }
 
   private startSchemaPolling() {
@@ -66,8 +81,9 @@ export class GatewayService implements OnModuleInit, OnModuleDestroy {
     this.pollInterval = setInterval(async () => {
       try {
         await this.loadSchemas();
+        this.logger.log('Schema recargado');
       } catch (error) {
-        console.error('Error reloading schemas:', error);
+        this.logger.warn(`Error recargando schema: ${error.message}`);
       }
     }, interval);
   }
