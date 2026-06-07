@@ -15,6 +15,7 @@ export class Card {
   @Output() edit = new EventEmitter<Producto>();
   @Output() delete = new EventEmitter<Producto>();
   @Output() availabilityToggle = new EventEmitter<{ id: string; disponible: boolean }>();
+  @Output() uploadImage = new EventEmitter<Producto>();
 
   onEdit(event: Event): void {
     event.stopPropagation();
@@ -32,5 +33,10 @@ export class Card {
       id: this.producto.id,
       disponible: !this.producto.disponible
     });
+  }
+
+  onImageClick(event: Event): void {
+    event.stopPropagation();
+    this.uploadImage.emit(this.producto);
   }
 }

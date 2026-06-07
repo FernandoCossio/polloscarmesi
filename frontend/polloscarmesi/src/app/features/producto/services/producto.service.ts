@@ -182,4 +182,10 @@ export class ProductoService {
       map(response => response.data.crearCategoria)
     );
   }
+
+  subirImagenProductoRest(id: string | number, file: File): Observable<Producto> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Producto>(`${environment.apiUrl}/productos/${id}/imagen`, formData);
+  }
 }

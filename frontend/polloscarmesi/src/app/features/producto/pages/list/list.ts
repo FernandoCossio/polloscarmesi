@@ -11,6 +11,7 @@ import { Header } from '../../components/header/header';
 import { Filter } from '../../components/filter/filter';
 import { Card } from '../../components/card/card';
 import { Form } from '../../components/form/form';
+import { ImageDialog } from '../../components/image-dialog/image-dialog';
 
 @Component({
   selector: 'app-producto-list',
@@ -23,7 +24,8 @@ import { Form } from '../../components/form/form';
     Header,
     Filter,
     Card,
-    Form
+    Form,
+    ImageDialog
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './list.html',
@@ -66,6 +68,8 @@ export class List implements OnInit {
 
   readonly formVisible = signal(false);
   readonly selectedProducto = signal<Producto | null>(null);
+  readonly imageDialogVisible = signal(false);
+  readonly selectedProductoForImage = signal<Producto | null>(null);
 
   ngOnInit(): void {
     this.cargarProductos();
@@ -247,5 +251,20 @@ export class List implements OnInit {
         }
       });
     }
+  }
+
+  onUploadImage(producto: Producto): void {
+    this.selectedProductoForImage.set(producto);
+    this.imageDialogVisible.set(true);
+  }
+
+  onImageUploaded(updatedProduct: Producto): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: `Imagen para "${updatedProduct.nombre}" actualizada correctamente`,
+      life: 3000
+    });
+    this.cargarProductos();
   }
 }
