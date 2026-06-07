@@ -25,6 +25,7 @@ export default () => {
     microservices: {
       ms1: {
         graphqlUrl: process.env.MS1_GRAPHQL_URL || 'http://localhost:8082/api/graphql',
+        restUrl: process.env.MS1_REST_URL || 'http://localhost:8082/api',
       },
       ms2: {
         graphqlUrl: process.env.MS2_GRAPHQL_URL || 'http://localhost:3001/graphql',
