@@ -152,18 +152,19 @@ Principios que guían la arquitectura:
 
 | Servicio | Nombre | Tecnología | Dominio de Responsabilidad |
 |---|---|---|---|
-| MS0 | API Gateway | NestJS (TypeScript) | Punto de entrada único. Autenticación JWT, verificación de roles y enrutamiento de requests hacia MS1, MS2 y MS3. No contiene lógica de negocio. |
-| MS1 | Gestión Restaurante | Spring Boot (Java) | Núcleo transaccional del sistema. Gestiona usuarios, roles, menú, productos, pedidos presenciales, pagos, recibos, cocina y registro blockchain de documentos. |
+| MS0 | API Gateway GraphQL | NestJS (TypeScript) | Punto de entrada único. Expone Superschema GraphQL via Schema Stitching. Propaga JWT a los microservicios internos. Delega auth a MS4. No contiene lógica de negocio. |
+| MS1 | Gestión Restaurante | Spring Boot (Java) | Núcleo transaccional del sistema. Gestiona menú, productos, pedidos presenciales, pagos, recibos, cocina y registro blockchain de documentos. Valida JWT emitidos por MS4. |
 | MS2 | Pedidos, Delivery y Automatización | NestJS (TypeScript) | Gestiona pedidos delivery, estados de entrega, asignación de repartidores, notificaciones push, telemetría GPS, eventos DynamoDB y automatización del cierre de caja via n8n. |
 | MS3 | IA, Machine Learning y BI | FastAPI (Python) | Procesamiento de imágenes de comprobantes (deep learning), estimación de tiempos de preparación (ML supervisado), segmentación de clientes (ML no supervisado) y exposición de datos para inteligencia de negocios. |
+| MS4 | Gestión de Usuarios y Autenticación | Spring Boot (Java) | Responsable exclusivo de autenticación y gestión de usuarios. Emite JWT firmados con RSA (llave privada). Gestiona usuarios, roles y contraseñas. Los demás microservicios validan JWT con la llave pública de MS4. |
 
 Componentes de infraestructura complementarios (no son microservicios de negocio):
 
 | Componente | Tecnología | Rol |
 |---|---|---|
 | Contrato Blockchain | Solidity + Hardhat | Smart contract desplegado en red testnet. Registra hashes de documentos. Integrado en MS1 via web3j. |
-| Base de datos relacional | PostgreSQL | Datos transaccionales principales. Compartida lógicamente entre MS1 y MS2, con esquemas separados por dominio. |
-| Base de datos NoSQL | Amazon DynamoDB | Eventos, logs, auditoría, telemetría GPS y registros de automatización. Gestionada principalmente por MS2. |
+| Base de datos relacional | PostgreSQL | Datos transaccionales principales. Cada microservicio tiene su propio esquema: MS1 (restaurante), MS2 (delivery), MS3 (IA/BI), MS4 (usuarios/auth). |
+| Base de datos NoSQL | Amazon DynamoDB | Eventos, logs, auditoría, telemetría GPS y registros de automatización. Gestionada principalmente por MS0 (auditoría) y MS2 (eventos). |
 | Almacenamiento de archivos | Amazon S3 | Documentos, comprobantes, evidencias de entrega y reportes. Accedido por MS1, MS2 y MS3. |
 | Mensajería asíncrona | Redis Pub/Sub | Canal de eventos entre microservicios para comunicación no bloqueante. |
 | Automatización | n8n | Orquestador del flujo de cierre de caja nocturno. Llama a MS2 y coordina el envío del reporte. |
@@ -175,28 +176,43 @@ Componentes de infraestructura complementarios (no son microservicios de negocio
 Las dependencias entre servicios siguen un flujo definido. Ningún microservicio accede directamente a la base de datos de otro.
 
 ```
-MS0 (API Gateway)
- ├── enruta hacia MS1 (pedidos presenciales, pagos, usuarios, menú, cocina)
- ├── enruta hacia MS2 (pedidos delivery, repartidores, notificaciones)
- └── enruta hacia MS3 (análisis de comprobantes, estimación tiempos, BI)
+MS0 (API Gateway GraphQL)
+ ├── expone Superschema GraphQL unificado al frontend (Schema Stitching de MS1+MS2+MS3)
+ ├── delega auth (login/registro) a MS4 via REST
+ ├── propaga header Authorization a MS1, MS2, MS3 al delegar operaciones GraphQL
+ ├── proxy REST de subida de imágenes de producto hacia MS1
+ └── registra auditoría de operaciones en DynamoDB
 
-MS1 (Spring Boot)
- ├── consulta a MS2 via GraphQL (estado de pedidos delivery, repartidor asignado)
- ├── consulta a MS3 via GraphQL (resultado análisis de comprobante, tiempo estimado)
- ├── publica eventos a Redis (pedido creado, pago registrado, recibo generado)
+MS1 (Spring Boot — Gestión Restaurante)
+ ├── expone schema GraphQL en /graphql (consumido por MS0 via Schema Stitching)
+ ├── valida JWT usando clave pública de MS4 (OAuth2 Resource Server)
+ ├── consulta a MS2 via REST interno (estado de pedidos delivery)
+ ├── consulta a MS3 via REST interno (resultado análisis de comprobante, tiempo estimado)
+ ├── publica eventos a Redis (pedido.creado, pago.registrado)
  └── llama al smart contract via web3j (registro de hash de documentos)
 
-MS2 (NestJS)
- ├── consulta a MS1 via GraphQL (datos del pedido, cliente, productos)
- ├── consulta a MS3 via GraphQL (tiempo estimado de preparación)
- ├── publica eventos a Redis (estado delivery actualizado, entrega confirmada)
- ├── escribe eventos y telemetría en DynamoDB
+MS2 (NestJS — Pedidos y Delivery)
+ ├── expone schema GraphQL en /graphql (consumido por MS0 via Schema Stitching)
+ ├── valida JWT usando clave pública de MS4
+ ├── consulta a MS1 via REST interno (datos del pedido, productos)
+ ├── consulta a MS3 via REST interno (tiempo estimado de preparación)
+ ├── publica eventos a Redis (delivery.estado, entrega.confirmada)
+ ├── escribe eventos y telemetría GPS en DynamoDB
  └── expone endpoint REST interno para n8n (cierre de caja)
 
-MS3 (FastAPI)
- ├── consulta a MS1 via GraphQL (datos históricos de pedidos para modelos ML)
- ├── publica eventos a Redis (resultado de análisis de comprobante)
+MS3 (FastAPI — IA y BI)
+ ├── expone schema GraphQL en /graphql (consumido por MS0 via Schema Stitching)
+ ├── valida JWT usando clave pública de MS4
+ ├── consulta a MS1 via REST interno (datos históricos de pedidos para modelos ML)
+ ├── consulta a MS2 via REST interno (datos históricos de delivery)
+ ├── publica eventos a Redis (comprobante.analizado, tiempo.estimado)
  └── lee y escribe resultados de modelos en PostgreSQL
+
+MS4 (Spring Boot — Usuarios y Auth)
+ ├── expone endpoints REST de login y registro (consumidos por MS0)
+ ├── emite JWT firmados con RSA (llave privada)
+ ├── provee clave pública (public.pem) para que MS1, MS2, MS3 validen tokens
+ └── gestiona usuarios, roles y contraseñas en PostgreSQL
 ```
 
 ---
@@ -648,16 +664,17 @@ pollos-carmesi-app/
 
 #### 4.0.1 Responsabilidad y Contexto de Dominio
 
-MS0 es el único punto de entrada público del sistema. Actúa como **GraphQL Gateway** para todos los frontends (Angular y React Native) usando la estrategia de **Schema Stitching**. Su responsabilidad es exclusivamente de infraestructura de comunicación: no contiene lógica de negocio del restaurante.
+MS0 es el único punto de entrada público del sistema. Actúa como **API Gateway** para los frontends, exponiendo un endpoint **GraphQL** (`/graphql`) y endpoints **REST** puntuales. Su responsabilidad es exclusivamente de infraestructura de comunicación: no contiene lógica de negocio del restaurante ni gestión de usuarios.
 
-Al iniciar, MS0 descarga remotamente los schemas GraphQL de MS1, MS2 y MS3 y los unifica en un único Superschema. El frontend realiza todas sus queries y mutations contra MS0 en un único endpoint `/graphql`. MS0 delega cada operación al microservicio propietario del tipo correspondiente.
+Al iniciar, MS0 descarga remotamente el schema GraphQL de los microservicios configurados via introspection, lo unifica y lo expone en un único schema en `/graphql`. Cada operación GraphQL se delega al microservicio remoto correspondiente. Además, MS0 ofrece endpoints REST que delegan a otros microservicios.
 
-Centraliza tres funciones críticas:
-- **Autenticación:** emite y valida tokens JWT para todos los usuarios del sistema. Expone endpoints REST para login/logout.
-- **Autorización:** verifica que el rol del usuario tenga permiso para ejecutar la operación GraphQL solicitada via guards declarativos por operación.
-- **Schema Stitching:** unifica los schemas GraphQL de MS1, MS2 y MS3 en un Superschema y delega cada operación al microservicio correcto.
+**Manejo de JWT en MS0:**
+MS0 no actúa como autoridad de autorización centralizada. En su lugar:
+- **Propaga el JWT:** si el request trae `Authorization: Bearer <token>`, MS0 reenvía ese header a los microservicios al delegar la operación (GraphQL y proxy REST).
+- **Verifica ligeramente para auditoría:** en un middleware global, MS0 intenta verificar de forma liviana el JWT (firma RSA y `exp/nbf`) usando la clave pública de MS4 para poblar `req.user` (`{ userId, role }`). Si el token es inválido, simplemente no se setea `req.user` y la petición continúa. Es el microservicio destino quien decide si rechaza por autenticación/autorización.
+- La autenticación y gestión de usuarios es responsabilidad exclusiva de MS4.
 
-Ningún microservicio interno (MS1, MS2, MS3) está expuesto públicamente. Solo MS0 tiene URL pública accesible desde internet.
+Ningún microservicio interno (MS1, MS2, MS3, MS4) está expuesto públicamente. Solo MS0 tiene URL pública accesible desde internet.
 
 ---
 
@@ -667,11 +684,13 @@ Ningún microservicio interno (MS1, MS2, MS3) está expuesto públicamente. Solo
 |---|---|
 | Framework | NestJS (TypeScript) |
 | GraphQL Gateway | `@nestjs/graphql` + `@graphql-tools/stitch` + `@graphql-tools/wrap` |
-| Schema remoto | `@graphql-tools/executor-http` para descargar schemas de MS1/MS2/MS3 |
-| Autenticación | `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt` |
-| Autorización | Guards por operación GraphQL con decorador `@Roles()` |
-| Cliente HTTP | `@nestjs/axios` para llamadas REST a MS1 (login/logout) |
-| Cliente DynamoDB | `@aws-sdk/client-dynamodb` |
+| Schema remoto | `@graphql-tools/executor-http` (introspection remota de MS1, MS2, MS3) |
+| JWT (para `req.user`) | Verificación ligera con `crypto` (firma RSA + `exp/nbf`) usando clave pública de MS4 |
+| Propagación de JWT | Reenvío del header `Authorization` hacia los microservicios al delegar operaciones |
+| Cliente HTTP | `@nestjs/axios` + `axios` + `rxjs` (REST hacia MS4 y proxy REST hacia MS1) |
+| Subida de archivos (proxy) | `@nestjs/platform-express` (multer) + `form-data` |
+| Documentación REST | `@nestjs/swagger` + `swagger-ui-express` |
+| Cliente DynamoDB | `@aws-sdk/client-dynamodb` + `@aws-sdk/util-dynamodb` |
 | Variables de entorno | `@nestjs/config` |
 
 ---
@@ -682,90 +701,79 @@ MS0 no tiene base de datos propia. Escribe logs de auditoría directamente en **
 
 | Almacenamiento | Uso |
 |---|---|
-| Amazon DynamoDB | Registro de eventos de auditoría: logins, logouts, accesos denegados, errores de operaciones GraphQL y requests por usuario. |
+| Amazon DynamoDB | Registro de eventos de auditoría: logins, logouts, operaciones GraphQL, errores y requests por usuario. |
 
 ---
 
 #### 4.0.4 Módulos y Casos de Uso
 
-**Módulo Auth (REST):**
-- `POST /api/v1/auth/login` — Recibe credenciales, valida contra MS1 via REST, emite JWT firmado con rol y userId.
-- `POST /api/v1/auth/logout` — Registra el evento en DynamoDB.
-- `POST /api/v1/auth/registro` — Delega el registro de nuevos Clientes a MS1 via REST.
+**Módulo Auth REST (delegación a MS4):**
+- `POST /auth/login` — Recibe credenciales, delega validación a MS4 via REST y retorna el JWT emitido por MS4.
+- `POST /auth/register` — Delega el registro de nuevos Clientes a MS4 via REST.
 
 **Módulo Schema Stitching (GraphQL Gateway):**
-- Al iniciar la aplicación, descarga el schema GraphQL de MS1, MS2 y MS3 via introspection.
-- Unifica los tres schemas en un Superschema con `@graphql-tools/stitch`.
-- Expone el Superschema unificado en el endpoint `/graphql`.
+- Al iniciar, descarga el schema GraphQL de MS1, MS2 y MS3 via introspection.
+- Construye el Superschema envolviendo los schemas remotos y lo expone en `/graphql`.
 - En cada operación GraphQL entrante:
-  - Valida el JWT del header `Authorization`.
-  - Verifica el rol del usuario contra la operación solicitada.
-  - Inyecta el contexto `{ userId, role }` en el request delegado.
-  - Delega la operación al microservicio propietario del tipo/resolver correspondiente.
-- Recarga automáticamente los schemas remotos si un microservicio se reinicia (polling configurable).
+  - Usa el contexto `{ req }` para acceder a headers y usuario extraído del JWT.
+  - Reenvía el header `Authorization` hacia el microservicio remoto al ejecutar la operación.
+  - Delega la resolución al microservicio propietario del tipo sin imponer bloqueos de rol en el gateway.
+- Recarga automáticamente los schemas remotos con polling configurable (`SCHEMA_POLL_INTERVAL_MS`).
+
+**Proxy de archivos (REST):**
+- `POST /productos/:id/imagen` — Recibe `multipart/form-data` (campo `file`) y reenvía el archivo a MS1 via REST, propagando `Authorization` si está presente.
 
 **Módulo Auditoría:**
 - Registra en DynamoDB cada operación GraphQL ejecutada: `timestamp`, `userId`, `role`, `operationName`, `operationType`, `statusCode`, `ip`.
-- Registra eventos críticos: login exitoso, login fallido, acceso denegado por rol.
+- Registra también operaciones REST (auth y proxy), asociando `userId/role` si el request trae un JWT válido.
 
-**Tabla de permisos por operación GraphQL:**
+**Tabla de operaciones GraphQL por microservicio propietario:**
 
-| Operación GraphQL | Microservicio propietario | Roles permitidos |
+| Operación GraphQL | Microservicio propietario | Descripción |
 |---|---|---|
-| `login`, `registro` | MS1 (via REST, no GraphQL) | Público |
-| `obtenerMenu`, `obtenerProducto` | MS1 | Todos autenticados |
-| `crearPedido`, `cancelarPedido` | MS1 | Cajero |
-| `actualizarEstadoCocina` | MS1 | Cocina |
-| `registrarPago` | MS1 | Cajero, Cliente |
-| `gestionarUsuarios` | MS1 | Administrador |
-| `crearPedidoDelivery` | MS2 | Cliente |
-| `confirmarEntrega`, `reportarIncidencia` | MS2 | Repartidor |
-| `obtenerPedidosAsignados` | MS2 | Repartidor |
-| `obtenerReportesBI`, `ejecutarSegmentacion` | MS3 | Administrador |
-| `obtenerResultadoComprobante` | MS3 | Administrador, Cajero |
+| `login`, `registro` | MS4 (via REST, no GraphQL) | Auth delegada a MS4 |
+| `obtenerMenu`, `obtenerProducto` | MS1 | Consulta de menú |
+| `crearPedido`, `cancelarPedido` | MS1 | Pedidos presenciales |
+| `actualizarEstadoCocina` | MS1 | Panel de cocina |
+| `registrarPago` | MS1 | Pagos |
+| `gestionarUsuarios` | MS4 | Gestión de usuarios (via REST delegado) |
+| `crearPedidoDelivery` | MS2 | Pedidos delivery |
+| `confirmarEntrega`, `reportarIncidencia` | MS2 | Operaciones del repartidor |
+| `obtenerPedidosAsignados` | MS2 | Vista del repartidor |
+| `obtenerReportesBI`, `ejecutarSegmentacion` | MS3 | Dashboard BI |
+| `obtenerResultadoComprobante` | MS3 | Análisis CNN |
 
 ---
 
 #### 4.0.5 Estructura de Carpetas y Descripción de Capas
 
 ```
-ms0-api-gateway/
+gateway/
 ├── src/
-│   ├── auth/                              # Módulo de autenticación REST
-│   │   ├── auth.module.ts
-│   │   ├── auth.controller.ts             # Endpoints REST: /api/v1/auth/login, logout, registro
-│   │   ├── auth.service.ts                # Valida credenciales contra MS1, emite JWT
-│   │   ├── strategies/
-│   │   │   └── jwt.strategy.ts            # Estrategia Passport para validar JWT en GraphQL
-│   │   └── guards/
-│   │       ├── jwt-auth.guard.ts          # Guard que valida el JWT en cada operación GraphQL
-│   │       └── roles.guard.ts             # Guard que verifica el rol por operación GraphQL
+│   ├── auth-rest/                         # Auth REST (delegación a MS4)
+│   │   ├── dto/                           # DTOs request/response de login y registro
+│   │   ├── auth-rest.controller.ts        # Endpoints REST: /auth/login, /auth/register
+│   │   ├── auth-rest.module.ts
+│   │   └── auth-rest.service.ts           # Llamadas REST a MS4
 │   │
-│   ├── gateway/                           # Módulo de Schema Stitching (núcleo del gateway)
+│   ├── gateway/                           # Módulo Schema Stitching (núcleo del gateway)
 │   │   ├── gateway.module.ts
-│   │   ├── gateway.service.ts             # Descarga schemas remotos y construye el Superschema
-│   │   ├── gateway.plugin.ts              # Plugin Apollo para inyectar contexto JWT en cada operación
-│   │   └── permissions.config.ts          # Mapa declarativo: operación GraphQL → roles permitidos
+│   │   └── gateway.service.ts             # Descarga schemas de MS1, MS2, MS3 y construye Superschema
 │   │
 │   ├── audit/                             # Módulo de auditoría en DynamoDB
 │   │   ├── audit.module.ts
 │   │   ├── audit.service.ts               # Escritura de eventos en DynamoDB
-│   │   └── audit.interceptor.ts           # Interceptor que captura cada operación GraphQL
-│   │
-│   ├── common/                            # Utilidades transversales
-│   │   ├── decorators/
-│   │   │   └── roles.decorator.ts         # Decorador @Roles() para permisos por operación
-│   │   ├── filters/
-│   │   │   └── graphql-exception.filter.ts # Formato estándar de errores GraphQL
-│   │   └── interfaces/
-│   │       └── jwt-payload.interface.ts   # Interfaz del payload JWT: { userId, role, iat, exp }
+│   │   └── audit.interceptor.ts           # Interceptor que captura cada operación GraphQL y REST
 │   │
 │   ├── config/
-│   │   └── configuration.ts               # Lectura de variables de entorno con Pydantic
+│   │   └── configuration.ts               # Lectura de variables de entorno
 │   │
+│   ├── productos-proxy.controller.ts      # Proxy REST para subida de imagen de producto hacia MS1
 │   ├── app.module.ts                      # Módulo raíz: registra GraphQLModule con Schema Stitching
 │   └── main.ts                            # Bootstrap, CORS, puerto
 │
+├── certs/
+│   └── public.pem                         # Clave pública de MS4 para verificación ligera del JWT
 ├── .env
 ├── Dockerfile
 ├── package.json
@@ -774,10 +782,11 @@ ms0-api-gateway/
 
 **Descripción de capas:**
 
-- **`auth/`:** Responsable de login, logout y registro via REST. Delega validación de credenciales a MS1. Emite y verifica JWT.
-- **`gateway/`:** Núcleo del Gateway. Descarga schemas de MS1/MS2/MS3 al iniciar, los une con Schema Stitching y expone el Superschema en `/graphql`. El plugin inyecta el contexto de identidad en cada operación delegada.
+- **`auth-rest/`:** Responsable de login y registro via REST. Delega estas operaciones completamente a MS4.
+- **`gateway/`:** Núcleo del Gateway. Descarga schemas de MS1, MS2 y MS3 al iniciar, los une con Schema Stitching y expone el Superschema en `/graphql`. Reenvía el header `Authorization` al delegar operaciones.
 - **`audit/`:** Capa transversal de observabilidad. El interceptor captura automáticamente cada operación sin modificar la lógica del gateway.
-- **`common/`:** Decoradores de roles, filtro de errores GraphQL e interfaces compartidas.
+- **`productos-proxy.controller.ts`:** Endpoint REST para subida de archivos que actúa como pasarela hacia MS1.
+- **`certs/`:** Contiene la clave pública RSA de MS4 para verificación ligera del JWT en el middleware de auditoría.
 - **`config/`:** Centraliza la lectura de variables de entorno.
 
 ---
@@ -792,16 +801,16 @@ MS0 **no define tipos ni resolvers propios**. Su schema GraphQL es el Superschem
 
 | Tipo | Endpoint | Descripción | Autenticación |
 |---|---|---|---|
-| REST POST | `/api/v1/auth/login` | Login, retorna JWT | Pública |
-| REST POST | `/api/v1/auth/logout` | Cierre de sesión | JWT requerido |
-| REST POST | `/api/v1/auth/registro` | Registro de nuevo Cliente | Pública |
-| GraphQL | `/graphql` | Superschema unificado: todas las queries y mutations del sistema | JWT + Rol requerido (excepto operaciones públicas) |
+| REST POST | `/auth/login` | Login, delega a MS4 y retorna JWT firmado por MS4 | Pública |
+| REST POST | `/auth/register` | Registro de nuevo Cliente, delega a MS4 | Pública |
+| REST POST | `/productos/:id/imagen` | Proxy de subida de imagen de producto hacia MS1 | JWT propagado |
+| GraphQL | `/graphql` | Superschema unificado: todas las queries y mutations del sistema | JWT propagado a MS destino |
 
 ---
 
 #### 4.0.8 Eventos publicados / consumidos
 
-MS0 **no publica ni consume eventos de Redis**. Su comunicación es exclusivamente GraphQL (hacia frontends) y REST (hacia MS1 para auth).
+MS0 **no publica ni consume eventos de Redis**. Su comunicación es GraphQL (frontend → MS1/MS2/MS3) y REST (MS0 → MS4 para auth).
 
 ---
 
@@ -810,10 +819,10 @@ MS0 **no publica ni consume eventos de Redis**. Su comunicación es exclusivamen
 | Variable | Descripción |
 |---|---|
 | `PORT` | Puerto del servidor (default: 4000) |
-| `JWT_SECRET` | Clave secreta para firmar y verificar tokens JWT |
-| `JWT_EXPIRATION` | Tiempo de expiración del JWT (ej: `8h`) |
-| `MS1_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS1 |
-| `MS1_REST_URL` | URL interna de MS1 para llamadas REST de auth |
+| `MS4_REST_URL` | URL interna base de MS4 para llamadas REST (ej: `http://ms4:8081/api`) |
+| `MS4_JWT_PUBLIC_KEY_PATH` | Ruta al archivo PEM con la clave pública de MS4 (default: `./certs/public.pem`) |
+| `MS1_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS1 (ej: `http://ms1:8080/graphql`) |
+| `MS1_REST_URL` | URL REST interna de MS1 para proxy de archivos (ej: `http://ms1:8080/api`) |
 | `MS2_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS2 |
 | `MS3_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS3 |
 | `SCHEMA_POLL_INTERVAL_MS` | Intervalo de recarga de schemas remotos en ms (default: 30000) |
@@ -821,6 +830,7 @@ MS0 **no publica ni consume eventos de Redis**. Su comunicación es exclusivamen
 | `AWS_ACCESS_KEY_ID` | Credencial AWS |
 | `AWS_SECRET_ACCESS_KEY` | Credencial AWS |
 | `DYNAMODB_AUDIT_TABLE` | Nombre de la tabla DynamoDB de auditoría |
+| `DYNAMODB_ENDPOINT` | Endpoint custom para DynamoDB local (opcional) |
 | `CORS_ORIGINS` | Orígenes permitidos para CORS (URLs de los frontends) |
 
 ---
@@ -829,9 +839,9 @@ MS0 **no publica ni consume eventos de Redis**. Su comunicación es exclusivamen
 
 #### 4.1.1 Responsabilidad y Contexto de Dominio
 
-MS1 es el núcleo transaccional del sistema. Gestiona todos los dominios de negocio del restaurante: usuarios, autenticación, menú, pedidos presenciales, pagos, cocina, documentos y registro blockchain. Es el microservicio con mayor cantidad de módulos y el que concentra la mayor parte de la lógica de negocio.
+MS1 es el núcleo transaccional del sistema. Gestiona los dominios de negocio del restaurante: menú, pedidos presenciales, pagos, cocina, documentos y registro blockchain. La gestión de usuarios y autenticación se delega completamente a MS4.
 
-MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expone su propio schema GraphQL en `/graphql`. Se comunica con MS2 y MS3 via REST interno cuando necesita datos de sus dominios de forma síncrona. Publica y consume eventos en Redis para coordinación asíncrona. Interactúa con Amazon S3 para almacenamiento de documentos y con el smart contract Solidity via web3j para registro de hashes.
+MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expone su propio schema GraphQL en `/graphql`. Se comunica con MS2 y MS3 via REST interno cuando necesita datos de sus dominios de forma síncrona. Publica y consume eventos en Redis para coordinación asíncrona. Interactúa con Amazon S3 para almacenamiento de documentos y con el smart contract Solidity via web3j para registro de hashes. La seguridad se basa en validación de tokens JWT emitidos por MS4 usando OAuth2 Resource Server con la clave pública RSA de MS4.
 
 **Ciclo de vida de pedidos gestionados por MS1:**
 
@@ -849,7 +859,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 | Base de datos | PostgreSQL via JDBC |
 | GraphQL servidor | Spring for GraphQL (`spring-boot-starter-graphql`) |
 | GraphQL cliente | No aplica — MS1 usa REST para llamadas inter-servicios a MS2 y MS3 |
-| Seguridad | Spring Security (validación de headers internos de MS0) |
+| Seguridad | Spring Security + OAuth2 Resource Server (validación JWT con clave pública RSA de MS4) |
 | Almacenamiento S3 | AWS SDK for Java v2 (`software.amazon.awssdk`) |
 | Blockchain | web3j para interacción con smart contract Solidity |
 | Mensajería Redis | Spring Data Redis (`spring-boot-starter-data-redis`) |
@@ -863,32 +873,24 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 
 | Almacenamiento | Uso |
 |---|---|
-| PostgreSQL | Base de datos principal. Almacena usuarios, roles, menú, productos, pedidos, pagos, recibos y metadatos de documentos S3. |
-| Amazon S3 | Almacenamiento de archivos: comprobantes de pago, recibos generados y documentos administrativos. MS1 guarda solo la URL y metadatos en PostgreSQL. |
+| PostgreSQL | Base de datos principal. Almacena menú, productos, pedidos, pagos, recibos y metadatos de documentos S3. |
+| Amazon S3 | Almacenamiento de archivos: imágenes de productos, comprobantes de pago, recibos generados y documentos administrativos. MS1 guarda solo la URL y metadatos en PostgreSQL. |
 | Redis | Canal Pub/Sub para publicar y consumir eventos asincrónicos con MS2 y MS3. |
 
 ---
 
 #### 4.1.4 Módulos y Casos de Uso
 
-**Módulo de Autenticación y Usuarios**
-- Validar credenciales de login (delegado desde MS0): verificar usuario y contraseña hasheada, retornar datos del usuario con su rol.
-- Registrar nuevo Cliente (desde app móvil via MS0).
-- CRUD de usuarios internos: crear, editar, activar y desactivar Cajeros, personal de Cocina y Repartidores (solo Administrador).
-- Consultar perfil de usuario autenticado.
-- Actualizar datos de perfil (nombre, contraseña, direcciones para Cliente).
-- Gestionar direcciones de entrega del Cliente (crear, editar, eliminar, establecer como predeterminada).
-
 **Módulo de Menú y Productos**
 - CRUD de categorías del menú (ej: Pollos, Bebidas, Guarniciones).
 - CRUD de productos: nombre, descripción, precio, categoría, imagen (URL S3) y disponibilidad.
 - Activar y desactivar disponibilidad de un producto en tiempo real.
-- Consultar menú completo con filtro por categoría (consumido por frontends y por MS2 via GraphQL).
-- Subir imagen de producto a S3 y guardar URL en PostgreSQL.
+- Consultar menú completo con filtro por categoría.
+- Recibir imagen de producto desde MS0 (proxy) y subirla a S3, guardando URL en PostgreSQL.
 
 **Módulo de Pedidos Presenciales**
 - Registrar nuevo pedido presencial con lista de productos, cantidades y número de ficha.
-- Calcular subtotal, descuentos y total del pedido.
+- Calcular subtotal y total del pedido.
 - Consultar pedidos activos del turno actual.
 - Cancelar pedido presencial con motivo.
 - Publicar evento `pedido.creado` en Redis al crear un pedido.
@@ -922,173 +924,80 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 
 #### 4.1.5 Estructura de Carpetas y Descripción de Capas
 
-La arquitectura sigue el patrón en capas clásico de Spring Boot: Controller → Service → Repository, organizado por módulos de dominio.
+La arquitectura sigue un patrón modular organizado por funcionalidades con separación clara entre dominio, infraestructura y características de negocio.
 
 ```
-ms1-gestion-restaurante/
+ms-restaurante/
 ├── src/
 │   └── main/
-│       ├── java/com/polloscarmesi/ms1/
+│       ├── java/com/restaurante/
+│       │   ├── common/                        # Componentes comunes y utilidades
+│       │   │   ├── decorators/                # Anotaciones personalizadas (ej: @CurrentUserId)
+│       │   │   ├── errors/                    # Manejador global de excepciones y definición de errores
+│       │   │   └── response/                  # Wrappers de respuestas API estandarizadas
 │       │   │
-│       │   ├── auth/                          # Módulo autenticación y usuarios
-│       │   │   ├── controller/
-│       │   │   │   ├── AuthController.java    # Endpoints REST: validar credenciales, registro
-│       │   │   │   └── UsuarioController.java # Endpoints REST: CRUD usuarios, perfil
-│       │   │   ├── service/
-│       │   │   │   ├── AuthService.java       # Lógica de validación de credenciales
-│       │   │   │   └── UsuarioService.java    # Lógica de gestión de usuarios y direcciones
-│       │   │   ├── repository/
-│       │   │   │   ├── UsuarioRepository.java # JPA Repository para usuarios
-│       │   │   │   └── DireccionRepository.java
-│       │   │   ├── model/
-│       │   │   │   ├── Usuario.java           # Entidad JPA
-│       │   │   │   ├── Rol.java               # Enum: ADMINISTRADOR, CAJERO, COCINA, REPARTIDOR, CLIENTE
-│       │   │   │   └── Direccion.java         # Entidad JPA de direcciones del cliente
-│       │   │   └── dto/
-│       │   │       ├── LoginRequestDTO.java
-│       │   │       ├── LoginResponseDTO.java
-│       │   │       └── UsuarioDTO.java
+│       │   ├── config/                        # Configuración de Spring Boot
+│       │   │   ├── OpenApiConfig.java         # Documentación Swagger
+│       │   │   ├── SecurityConfig.java        # OAuth2 Resource Server: valida JWT con clave pública MS4
+│       │   │   ├── RedisConfig.java           # Configuración de conexión Redis
+│       │   │   ├── S3Config.java              # Configuración del cliente AWS S3
+│       │   │   ├── Web3jConfig.java           # Configuración de conexión blockchain
+│       │   │   └── WebConfig.java             # Configuración CORS y web
 │       │   │
-│       │   ├── menu/                          # Módulo menú y productos
-│       │   │   ├── controller/
-│       │   │   │   ├── CategoriaController.java
-│       │   │   │   └── ProductoController.java
-│       │   │   ├── service/
-│       │   │   │   ├── CategoriaService.java
-│       │   │   │   └── ProductoService.java
-│       │   │   ├── repository/
-│       │   │   │   ├── CategoriaRepository.java
-│       │   │   │   └── ProductoRepository.java
-│       │   │   ├── model/
-│       │   │   │   ├── Categoria.java
-│       │   │   │   └── Producto.java
-│       │   │   └── dto/
-│       │   │       ├── CategoriaDTO.java
-│       │   │       └── ProductoDTO.java
+│       │   ├── domain/                        # Capa de dominio
+│       │   │   └── models/                    # Entidades JPA: Categoria, Producto, Pedido,
+│       │   │                                  # DetallePedido, Pago, Recibo, Documento, Configuracion
 │       │   │
-│       │   ├── pedido/                        # Módulo pedidos presenciales
-│       │   │   ├── controller/
-│       │   │   │   └── PedidoController.java
-│       │   │   ├── service/
-│       │   │   │   └── PedidoService.java
-│       │   │   ├── repository/
-│       │   │   │   ├── PedidoRepository.java
-│       │   │   │   └── DetallePedidoRepository.java
-│       │   │   ├── model/
-│       │   │   │   ├── Pedido.java            # Entidad JPA con tipo (PRESENCIAL/DELIVERY) y estado
-│       │   │   │   ├── DetallePedido.java     # Línea de producto dentro del pedido
-│       │   │   │   ├── EstadoPedido.java      # Enum de estados por tipo de pedido
-│       │   │   │   └── TipoPedido.java        # Enum: PRESENCIAL, DELIVERY
-│       │   │   └── dto/
-│       │   │       ├── PedidoRequestDTO.java
-│       │   │       └── PedidoResponseDTO.java
+│       │   ├── features/                      # Módulos de negocio organizados por funcionalidad
+│       │   │   ├── menu/                      # Controller, Service, Repository de Categoría y Producto
+│       │   │   ├── pedidos/                   # Controller, Service, Repository de Pedido y DetallePedido
+│       │   │   ├── pagos/                     # Controller, Service, Repository de Pago y Recibo
+│       │   │   ├── cocina/                    # Controller, Service de cola de cocina
+│       │   │   ├── blockchain/                # Controller, Service de documentos y blockchain (web3j)
+│       │   │   └── configuracion/             # Controller, Service, Repository de Configuracion
 │       │   │
-│       │   ├── pago/                          # Módulo pagos y recibos
-│       │   │   ├── controller/
-│       │   │   │   └── PagoController.java
-│       │   │   ├── service/
-│       │   │   │   ├── PagoService.java
-│       │   │   │   └── ReciboService.java     # Generación de recibos y registro blockchain
-│       │   │   ├── repository/
-│       │   │   │   ├── PagoRepository.java
-│       │   │   │   └── ReciboRepository.java
-│       │   │   ├── model/
-│       │   │   │   ├── Pago.java
-│       │   │   │   ├── MetodoPago.java        # Enum: EFECTIVO, QR
-│       │   │   │   ├── EstadoPago.java        # Enum: PENDIENTE, ACEPTADO, RECHAZADO, REVISION_MANUAL
-│       │   │   │   └── Recibo.java
-│       │   │   └── dto/
-│       │   │       ├── PagoRequestDTO.java
-│       │   │       └── ReciboDTO.java
+│       │   ├── graphql/                       # Capa GraphQL expuesta a MS0
+│       │   │   └── resolvers/                 # Resolvers GraphQL por módulo (menu, pedidos, pagos, cocina)
 │       │   │
-│       │   ├── cocina/                        # Módulo panel de cocina
-│       │   │   ├── controller/
-│       │   │   │   └── CocinaController.java
-│       │   │   ├── service/
-│       │   │   │   └── CocinaService.java
-│       │   │   └── dto/
-│       │   │       └── ColaPedidosDTO.java
+│       │   ├── infrastructure/                # Adaptadores de servicios externos
+│       │   │   ├── s3/                        # S3Service: upload, download, URLs firmadas
+│       │   │   ├── redis/                     # RedisPublisher, RedisSubscriber
+│       │   │   └── rest/                      # MS2RestClient, MS3RestClient (llamadas inter-servicios)
 │       │   │
-│       │   ├── blockchain/                    # Módulo documentos y blockchain
-│       │   │   ├── controller/
-│       │   │   │   └── BlockchainController.java
-│       │   │   ├── service/
-│       │   │   │   ├── BlockchainService.java # Interacción con smart contract via web3j
-│       │   │   │   └── DocumentoService.java  # Gestión de documentos en S3
-│       │   │   ├── repository/
-│       │   │   │   └── DocumentoRepository.java
-│       │   │   └── model/
-│       │   │       └── Documento.java         # Entidad con metadatos del documento y txHash
+│       │   ├── services/
+│       │   │   └── thumbnail/                 # Servicio de generación de thumbnails para imágenes
 │       │   │
-│       │   ├── configuracion/                 # Módulo configuración del restaurante
-│       │   │   ├── controller/
-│       │   │   │   └── ConfiguracionController.java
-│       │   │   ├── service/
-│       │   │   │   └── ConfiguracionService.java
-│       │   │   ├── repository/
-│       │   │   │   └── ConfiguracionRepository.java
-│       │   │   └── model/
-│       │   │       └── Configuracion.java
-│       │   │
-│       │   ├── graphql/                       # Capa GraphQL expuesta a MS2 y MS3
-│       │   │   ├── resolver/
-│       │   │   │   ├── MenuGraphQLResolver.java    # Queries del menú para MS2
-│       │   │   │   ├── PedidoGraphQLResolver.java  # Queries de pedidos para MS2 y MS3
-│       │   │   │   └── UsuarioGraphQLResolver.java # Queries de usuarios para MS2
-│       │   │   └── client/
-│       │   │       ├── MS2GraphQLClient.java  # Cliente GraphQL para consultar MS2
-│       │   │       └── MS3GraphQLClient.java  # Cliente GraphQL para consultar MS3
-│       │   │
-│       │   ├── infrastructure/                # Infraestructura transversal
-│       │   │   ├── s3/
-│       │   │   │   └── S3Service.java         # Upload, download y URLs firmadas de S3
-│       │   │   ├── redis/
-│       │   │   │   ├── RedisPublisher.java    # Publicación de eventos en canales Redis
-│       │   │   │   └── RedisSubscriber.java   # Suscripción y manejo de eventos Redis
-│       │   │   └── security/
-│       │   │       └── InternalHeaderFilter.java  # Filtro que extrae X-User-Id y X-User-Role
-│       │   │
-│       │   └── common/                        # Utilidades y configuración global
-│       │       ├── exception/
-│       │       │   ├── GlobalExceptionHandler.java
-│       │       │   └── BusinessException.java
-│       │       ├── response/
-│       │       │   └── ApiResponse.java       # Wrapper estándar de respuestas REST
-│       │       └── config/
-│       │           ├── SecurityConfig.java
-│       │           ├── RedisConfig.java
-│       │           ├── S3Config.java
-│       │           └── Web3jConfig.java
+│       │   └── RestauranteApplication.java    # Clase principal de Spring Boot
 │       │
 │       └── resources/
+│           ├── application.yml                # Configuración base
+│           ├── application-prod.yml           # Configuración de producción
 │           ├── graphql/
 │           │   └── schema.graphqls            # Schema GraphQL expuesto por MS1
-│           ├── application.yml                # Configuración base
-│           └── application-prod.yml           # Configuración de producción
+│           └── certs/
+│               └── ms4-public.pem             # Clave pública RSA de MS4 para validar JWT
 │
-├── Dockerfile
+├── .env
+├── .env.example
 ├── pom.xml
-└── README.md
+└── mvnw / mvnw.cmd
 ```
 
 **Descripción de capas:**
 
-- **`controller/`:** Recibe requests REST desde MS0, valida DTOs de entrada y delega al servicio correspondiente. No contiene lógica de negocio.
-- **`service/`:** Contiene toda la lógica de negocio del módulo. Coordina repositorios, infraestructura (S3, Redis, blockchain) y llamadas GraphQL a otros microservicios.
-- **`repository/`:** Interfaces JPA que abstraen el acceso a PostgreSQL. Solo contiene queries de base de datos.
-- **`model/`:** Entidades JPA que mapean las tablas de PostgreSQL y enums de dominio.
-- **`dto/`:** Objetos de transferencia de datos para requests y responses REST. Nunca se exponen entidades JPA directamente.
-- **`graphql/resolver/`:** Expone el schema GraphQL de MS1 hacia MS2 y MS3. Resuelve queries y mutations GraphQL entrantes.
-- **`graphql/resolver/`:** Expone el schema GraphQL de MS1. Los resolvers son consumidos por MS0 via Schema Stitching y delegados al frontend.
-- **`graphql/client/`:** Clientes REST HTTP para consultas síncronas salientes hacia MS2 y MS3.
-- **`infrastructure/`:** Adaptadores de servicios externos: S3, Redis y el filtro de seguridad de headers internos.
-- **`common/`:** Manejador global de excepciones, wrapper de respuestas REST y beans de configuración Spring.
+- **`common/`:** Decoradores personalizados (ej: `@CurrentUserId` para extraer el userId del JWT), manejador global de excepciones y wrappers de respuestas API estandarizadas.
+- **`config/`:** Clases de configuración Spring Boot. `SecurityConfig` configura OAuth2 Resource Server para validar JWT emitidos por MS4 usando su clave pública RSA.
+- **`domain/models/`:** Entidades JPA que mapean las tablas de PostgreSQL del dominio del restaurante.
+- **`features/`:** Módulos de negocio organizados por funcionalidad. Cada módulo contiene su Controller (REST + GraphQL resolver), Service (lógica de negocio) y Repository (acceso a datos JPA).
+- **`graphql/resolvers/`:** Resolvers GraphQL que exponen las operaciones de MS1 al Superschema de MS0.
+- **`infrastructure/`:** Adaptadores desacoplados para S3, Redis y clientes REST inter-servicios hacia MS2 y MS3.
+- **`services/thumbnail/`:** Servicio utilitario para generación de thumbnails de imágenes de productos.
 
 ---
 
-#### 4.1.6 Esquema GraphQL (Queries y Mutations expuestos a MS2 y MS3)
+#### 4.1.6 Esquema GraphQL (expuesto al frontend via MS0)
 
-MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0. Los tipos y operaciones aquí definidos son la fuente de verdad del dominio de gestión del restaurante.
+MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0.
 
 ```graphql
 type Query {
@@ -1101,102 +1010,71 @@ type Query {
   obtenerPedido(id: ID!): Pedido
   obtenerPedidosPorFecha(fecha: String!): [Pedido!]!
   obtenerPedidosHistoricos(clienteId: ID!, limit: Int): [Pedido!]!
+  obtenerColaCocina: [Pedido!]!
 
-  # Usuarios
-  obtenerCliente(id: ID!): Cliente
-  obtenerUsuario(id: ID!): Usuario
+  # Pagos y documentos
+  obtenerResultadoPago(pagoId: ID!): Pago
+  obtenerDocumentos: [Documento!]!
+  obtenerConfiguracion: Configuracion!
 }
 
 type Mutation {
-  # Pedidos (MS2 notifica sincronización de estado delivery)
+  # Menú
+  crearProducto(input: ProductoInput!): Producto!
+  editarProducto(id: ID!, input: ProductoInput!): Producto!
+  cambiarDisponibilidadProducto(id: ID!, disponible: Boolean!): Producto!
+
+  # Pedidos presenciales
+  crearPedido(input: PedidoInput!): Pedido!
+  cancelarPedido(id: ID!, motivo: String!): Pedido!
+
+  # Cocina
+  actualizarEstadoCocina(pedidoId: ID!, estado: EstadoPedido!): Pedido!
+
+  # Sincronización delivery (llamado internamente por MS2 via REST)
   sincronizarEstadoDelivery(pedidoId: ID!, estado: EstadoDelivery!): Pedido!
+
+  # Pagos
+  registrarPago(input: PagoInput!): Pago!
+
+  # Blockchain y documentos
+  registrarHashDocumento(documentoId: ID!, tipo: TipoDocumento!): String!
+  actualizarConfiguracion(input: ConfiguracionInput!): Configuracion!
 }
 
-type Producto {
-  id: ID!
-  nombre: String!
-  descripcion: String
-  precio: Float!
-  categoria: Categoria!
-  imagenUrl: String
-  disponible: Boolean!
-}
-
-type Categoria {
-  id: ID!
-  nombre: String!
-}
-
-type Pedido {
-  id: ID!
-  numerFicha: String
-  tipo: TipoPedido!
-  estado: String!
-  total: Float!
-  detalles: [DetallePedido!]!
-  fechaCreacion: String!
-}
-
-type DetallePedido {
-  producto: Producto!
-  cantidad: Int!
-  subtotal: Float!
-}
-
-type Cliente {
-  id: ID!
-  nombre: String!
-  telefono: String
-  direcciones: [Direccion!]!
-}
-
-type Direccion {
-  id: ID!
-  referencia: String!
-  coordenadas: String
-}
-
-type Usuario {
-  id: ID!
-  nombre: String!
-  rol: String!
-  activo: Boolean!
-}
-
-enum TipoPedido { PRESENCIAL DELIVERY }
+enum EstadoPedido { PENDIENTE EN_PREPARACION LISTO ENTREGADO CANCELADO }
 enum EstadoDelivery { CONFIRMADO EN_PREPARACION EN_CAMINO ENTREGADO CANCELADO }
+enum TipoDocumento { RECIBO_PAGO CIERRE_CAJA REPORTE_ADMINISTRATIVO }
+enum MetodoPago { EFECTIVO QR }
+enum EstadoPago { PENDIENTE ACEPTADO RECHAZADO REVISION_MANUAL }
 ```
 
 ---
 
-#### 4.1.7 Endpoints REST expuestos hacia MS0
+#### 4.1.7 Endpoints REST expuestos
 
-Todos los endpoints son internos, recibidos desde MS0 con headers `X-User-Id` y `X-User-Role`.
+Todos los endpoints validan el JWT emitido por MS4 via OAuth2 Resource Server.
 
 | Método | Endpoint | Descripción | Rol requerido |
 |---|---|---|---|
-| POST | `/api/v1/auth/validar` | Valida credenciales y retorna datos del usuario | Interno (MS0) |
-| POST | `/api/v1/auth/registro` | Registro de nuevo Cliente | Público |
-| GET | `/api/v1/usuarios` | Listar usuarios internos | Administrador |
-| POST | `/api/v1/usuarios` | Crear usuario interno | Administrador |
-| PUT | `/api/v1/usuarios/{id}` | Editar usuario | Administrador |
-| PATCH | `/api/v1/usuarios/{id}/estado` | Activar/desactivar usuario | Administrador |
-| GET | `/api/v1/menu` | Obtener menú completo | Todos |
-| POST | `/api/v1/menu/productos` | Crear producto | Administrador |
-| PUT | `/api/v1/menu/productos/{id}` | Editar producto | Administrador |
-| PATCH | `/api/v1/menu/productos/{id}/disponibilidad` | Cambiar disponibilidad | Administrador |
-| POST | `/api/v1/pedidos` | Registrar pedido presencial | Cajero |
-| GET | `/api/v1/pedidos/turno` | Pedidos del turno activo | Cajero |
-| GET | `/api/v1/pedidos/{id}` | Detalle de pedido | Cajero, Administrador |
-| DELETE | `/api/v1/pedidos/{id}` | Cancelar pedido | Cajero |
-| POST | `/api/v1/pagos` | Registrar pago y subir comprobante | Cajero, Cliente |
-| GET | `/api/v1/cocina/cola` | Cola de pedidos activos | Cocina |
-| PATCH | `/api/v1/cocina/pedidos/{id}/estado` | Cambiar estado de pedido | Cocina |
-| GET | `/api/v1/blockchain/documentos` | Listar documentos con metadatos | Administrador |
-| POST | `/api/v1/blockchain/registrar` | Registrar hash de documento | Administrador |
-| GET | `/api/v1/blockchain/verificar/{txHash}` | Verificar integridad de documento | Administrador |
-| GET | `/api/v1/configuracion` | Obtener configuración del restaurante | Administrador |
-| PUT | `/api/v1/configuracion` | Actualizar configuración | Administrador |
+| GET | `/api/menu` | Obtener menú completo | Todos |
+| POST | `/api/menu/productos` | Crear producto | Administrador |
+| PUT | `/api/menu/productos/{id}` | Editar producto | Administrador |
+| PATCH | `/api/menu/productos/{id}/disponibilidad` | Cambiar disponibilidad | Administrador |
+| POST | `/api/menu/productos/{id}/imagen` | Recibir imagen desde MS0 proxy y subir a S3 | Administrador |
+| POST | `/api/pedidos` | Registrar pedido presencial | Cajero |
+| GET | `/api/pedidos/turno` | Pedidos del turno activo | Cajero |
+| GET | `/api/pedidos/{id}` | Detalle de pedido | Cajero, Administrador |
+| DELETE | `/api/pedidos/{id}` | Cancelar pedido | Cajero |
+| POST | `/api/pagos` | Registrar pago y subir comprobante | Cajero, Cliente |
+| GET | `/api/cocina/cola` | Cola de pedidos activos | Cocina |
+| PATCH | `/api/cocina/pedidos/{id}/estado` | Cambiar estado de pedido | Cocina |
+| GET | `/api/blockchain/documentos` | Listar documentos | Administrador |
+| POST | `/api/blockchain/registrar` | Registrar hash de documento | Administrador |
+| GET | `/api/blockchain/verificar/{txHash}` | Verificar integridad | Administrador |
+| GET | `/api/configuracion` | Obtener configuración | Administrador |
+| PUT | `/api/configuracion` | Actualizar configuración | Administrador |
+| GET | `/api/internal/resumen-dia` | Resumen de ventas del día (solo para MS2 inter-servicios) | Interno |
 
 ---
 
@@ -1230,10 +1108,13 @@ Todos los endpoints son internos, recibidos desde MS0 con headers `X-User-Id` y 
 | `AWS_SECRET_ACCESS_KEY` | Credencial AWS |
 | `AWS_S3_BUCKET_NAME` | Nombre del bucket S3 |
 | `BLOCKCHAIN_CONTRACT_ADDRESS` | Dirección del smart contract desplegado en testnet |
-| `BLOCKCHAIN_NETWORK_URL` | URL RPC de la red testnet (Sepolia/Polygon) |
+| `BLOCKCHAIN_NETWORK_URL` | URL RPC de la red testnet (Polygon Mumbai) |
 | `BLOCKCHAIN_WALLET_PRIVATE_KEY` | Clave privada de la wallet para firmar transacciones |
 | `MS2_REST_INTERNAL_URL` | URL interna REST de MS2 para comunicación inter-servicios |
 | `MS3_REST_INTERNAL_URL` | URL interna REST de MS3 para comunicación inter-servicios |
+| `MS4_JWT_PUBLIC_KEY` | Ruta a la clave pública RSA de MS4 para validar JWT (`classpath:certs/ms4-public.pem`) |
+
+---
 
 ### 4.2 MS2 - Pedidos, Delivery y Automatización (NestJS)
 
@@ -1918,6 +1799,198 @@ enum ResultadoAnalisis {
 
 ---
 
+### 4.4 MS4 - Gestión de Usuarios y Autenticación (Spring Boot)
+
+#### 4.4.1 Responsabilidad y Contexto de Dominio
+
+MS4 es el microservicio dedicado exclusivamente a la **gestión de usuarios** y **autenticación** del sistema. Es la autoridad de identidad: emite tokens JWT firmados con RSA (llave privada) y administra la persistencia de usuarios y roles. Los demás microservicios (MS1, MS2, MS3) validan los tokens usando la llave pública de MS4 de forma autónoma sin consultar a MS4 en tiempo real.
+
+MS0 delega las operaciones de login y registro a MS4 via REST. MS4 no participa en la comunicación GraphQL ni en los flujos de negocio del restaurante.
+
+**Funciones principales:**
+- Autenticar credenciales (username/email + password) y emitir JWT con claim `roles`.
+- Registrar nuevos Clientes (por defecto con rol `CLIENTE`).
+- Proveer la clave pública RSA (`public.pem`) para que los demás microservicios validen tokens de forma autónoma.
+- Gestionar roles del sistema: `ADMINISTRADOR`, `CAJERO`, `COCINA`, `REPARTIDOR`, `CLIENTE`.
+- Sembrar datos iniciales en ambiente `dev` (roles y usuarios base).
+
+---
+
+#### 4.4.2 Tecnología Principal
+
+| Elemento | Tecnología |
+|---|---|
+| Framework | Spring Boot 4.0.x (Java 21) |
+| Persistencia | Spring Data JPA + Hibernate |
+| Base de datos | PostgreSQL |
+| Seguridad | Spring Security + OAuth2 Resource Server (JWT) |
+| Firma/validación JWT | Nimbus JOSE/JWT (`JwtEncoder`/`JwtDecoder`) con RSA (PEM) |
+| Documentación | SpringDoc OpenAPI (Swagger UI) |
+| Email | Spring Boot Starter Mail (`JavaMailSender`) |
+| Variables de entorno | Spring Boot `application.properties` + `springboot4-dotenv` |
+
+---
+
+#### 4.4.3 Base de Datos Utilizada
+
+| Almacenamiento | Uso |
+|---|---|
+| PostgreSQL | Usuarios, roles y relaciones usuario-rol. Esquema independiente del resto de microservicios. |
+| Certificados (classpath) | `certs/private.pem` para firmar JWT y `certs/public.pem` para verificación. |
+
+---
+
+#### 4.4.4 Módulos y Casos de Uso
+
+**Módulo de Autenticación (REST)**
+- Login: autentica con `AuthenticationManager` y genera un access token JWT firmado con RSA.
+- JWT emitido contiene: `sub` (username), `roles` (lista con prefijo `ROLE_`), `iss`, `iat`, `exp`.
+
+**Módulo de Usuarios**
+- Registro de Cliente: crea usuario, valida duplicados (username/email), encripta password con BCrypt, asigna rol `CLIENTE` y persiste.
+- CRUD de usuarios internos gestionado por el Administrador (Cajeros, Cocina, Repartidores).
+- Gestión de direcciones de entrega del Cliente (crear, editar, eliminar, predeterminada).
+
+**Módulo de Roles**
+- CRUD de roles del sistema: `ADMINISTRADOR`, `CAJERO`, `COCINA`, `REPARTIDOR`, `CLIENTE`.
+- Asignación y revocación de roles a usuarios.
+
+**Semillas (solo perfil `dev`)**
+- Carga inicial de roles y usuarios base mediante `CommandLineRunner`.
+
+**Infraestructura**
+- Servicio de email (SMTP) via `JavaMailSender` para notificaciones de cuenta.
+- Exposición de la clave pública RSA en endpoint público para que otros servicios puedan descargarla si es necesario.
+
+---
+
+#### 4.4.5 Estructura de Carpetas y Descripción de Capas
+
+```
+auth/
+├── src/
+│   ├── main/
+│   │   ├── java/com/auth/
+│   │   │   ├── auth/
+│   │   │   │   ├── jwt/                       # JwtService: generación y firma de JWT con RSA
+│   │   │   │   └── userdetails/               # UserDetailsService y principal desde base de datos
+│   │   │   │
+│   │   │   ├── common/
+│   │   │   │   ├── decorators/                # @CurrentUserId: extrae userId del JWT en controllers
+│   │   │   │   ├── errors/                    # Excepciones de aplicación y handler global
+│   │   │   │   └── response/                  # ApiResponse y estructuras de error estandarizadas
+│   │   │   │
+│   │   │   ├── config/                        # SecurityConfig, JwtConfig, WebConfig, OpenApiConfig
+│   │   │   │
+│   │   │   ├── domain/
+│   │   │   │   ├── dtos/                      # DTOs de auth y usuario (LoginRequest, RegisterRequest)
+│   │   │   │   ├── enums/                     # Enum de roles del sistema
+│   │   │   │   └── models/                    # Entidades JPA: Usuario, Rol, Direccion
+│   │   │   │
+│   │   │   ├── features/
+│   │   │   │   ├── auth/                      # AuthController, AuthService (login)
+│   │   │   │   ├── rol/                       # RolRepository, RolService, excepciones
+│   │   │   │   └── usuario/                   # UsuarioController, UsuarioService, UsuarioRepository
+│   │   │   │
+│   │   │   ├── seed/                          # Seeder de roles y usuarios (solo perfil dev)
+│   │   │   │
+│   │   │   ├── services/
+│   │   │   │   └── email/                     # EmailService via JavaMailSender
+│   │   │   │
+│   │   │   └── AuthApplication.java           # Clase principal de Spring Boot
+│   │   │
+│   │   └── resources/
+│   │       ├── application.properties         # Configuración base
+│   │       └── certs/
+│   │           ├── private.pem                # Clave privada RSA para firmar JWT (nunca expuesta)
+│   │           └── public.pem                 # Clave pública RSA para verificación (compartida con MS1/MS2/MS3)
+│   │
+│   └── test/
+│       └── java/com/auth/AuthApplicationTests.java
+│
+├── .env
+├── .env.example
+├── pom.xml
+└── mvnw / mvnw.cmd
+```
+
+**Descripción de capas:**
+
+- **`auth/jwt/`:** Lógica de generación y firma de JWT usando RSA con Nimbus JOSE. El token incluye `sub`, `roles`, `iss`, `iat` y `exp`.
+- **`auth/userdetails/`:** Implementación de `UserDetailsService` para cargar el usuario desde PostgreSQL durante la autenticación.
+- **`common/`:** Decoradores personalizados, handler global de excepciones y wrapper de respuestas estandarizadas.
+- **`config/`:** `SecurityConfig` configura autenticación y `JwtConfig` configura el encoder/decoder RSA.
+- **`domain/`:** Entidades JPA (`Usuario`, `Rol`, `Direccion`) y DTOs de entrada/salida.
+- **`features/`:** Módulos de negocio: auth (login), rol (CRUD de roles) y usuario (CRUD de usuarios y direcciones).
+- **`seed/`:** Datos iniciales para ambiente de desarrollo: roles base y usuarios de prueba.
+- **`certs/`:** Par de claves RSA. La `private.pem` firma los tokens. La `public.pem` se comparte con MS0, MS1, MS2 y MS3 para validación autónoma.
+
+---
+
+#### 4.4.6 Esquema GraphQL
+
+MS4 **no expone GraphQL**. Su comunicación es exclusivamente REST. La gestión de usuarios desde el frontend se realiza via MS0 que delega a MS4 via REST.
+
+---
+
+#### 4.4.7 Endpoints REST expuestos hacia MS0
+
+Context-path global: `/api`
+
+| Método | Endpoint | Descripción | Autenticación |
+|---|---|---|---|
+| POST | `/api/auth/login` | Autentica credenciales y retorna JWT firmado con RSA | Pública |
+| POST | `/api/auth/register` | Registra nuevo Cliente, retorna JWT | Pública |
+| GET | `/api/usuarios` | Listar usuarios internos | JWT — rol ADMINISTRADOR |
+| POST | `/api/usuarios` | Crear usuario interno (Cajero, Cocina, Repartidor) | JWT — rol ADMINISTRADOR |
+| PUT | `/api/usuarios/{id}` | Editar usuario | JWT — rol ADMINISTRADOR |
+| PATCH | `/api/usuarios/{id}/estado` | Activar / desactivar usuario | JWT — rol ADMINISTRADOR |
+| GET | `/api/usuarios/perfil` | Obtener perfil del usuario autenticado | JWT requerido |
+| PUT | `/api/usuarios/perfil` | Actualizar datos de perfil | JWT requerido |
+| GET | `/api/usuarios/direcciones` | Listar direcciones del Cliente | JWT — rol CLIENTE |
+| POST | `/api/usuarios/direcciones` | Agregar nueva dirección | JWT — rol CLIENTE |
+| PUT | `/api/usuarios/direcciones/{id}` | Editar dirección | JWT — rol CLIENTE |
+| DELETE | `/api/usuarios/direcciones/{id}` | Eliminar dirección | JWT — rol CLIENTE |
+
+---
+
+#### 4.4.8 Eventos publicados / consumidos
+
+MS4 **no publica ni consume eventos de Redis** en la implementación actual. Su comunicación es exclusivamente REST síncrono.
+
+---
+
+#### 4.4.9 Seguridad JWT
+
+| Parámetro | Valor |
+|---|---|
+| Algoritmo | RSA (RS256) |
+| Firma | Llave privada (`certs/private.pem`) — solo en MS4 |
+| Verificación | Llave pública (`certs/public.pem`) — compartida con MS0, MS1, MS2, MS3 |
+| Claims emitidos | `iss`, `iat`, `exp`, `sub` (username), `roles` (lista con prefijo `ROLE_`) |
+| TTL access token | Configurable (default: 1 día — `P1D`) |
+
+---
+
+#### 4.4.10 Variables de Entorno
+
+| Variable | Descripción |
+|---|---|
+| `server.port` | Puerto del servidor (default: 8081) |
+| `server.servlet.context-path` | Prefijo global (default: `/api`) |
+| `spring.datasource.url` | URL de PostgreSQL (ej: `jdbc:postgresql://localhost:5432/auth_restaurante`) |
+| `DB_USER` | Usuario de PostgreSQL |
+| `DB_PASSWORD` | Contraseña de PostgreSQL |
+| `app.jwt.issuer` | Emisor del JWT (default: `restaurante`) |
+| `app.jwt.access-token-ttl` | TTL del access token (default: `P1D`) |
+| `app.jwt.private-key` | Ubicación llave privada (default: `classpath:certs/private.pem`) |
+| `app.jwt.public-key` | Ubicación llave pública (default: `classpath:certs/public.pem`) |
+| `MAIL_USERNAME` | Usuario SMTP para envío de correos |
+| `MAIL_PASSWORD` | Contraseña SMTP |
+| `app.base-url` | URL base del microservicio (default: `http://localhost:8081/api`) |
+
+---
+
 ## 5. Blockchain
 
 ### 5.1 Descripción y Justificación
@@ -2360,8 +2433,8 @@ Funcionalidad exclusiva de la app móvil del Cliente. Convierte el audio dictado
 
 | Almacenamiento | Motor | Uso |
 |---|---|---|
-| Principal | PostgreSQL | Datos transaccionales: usuarios, menú, pedidos, pagos, documentos |
-| Archivos | Amazon S3 | Binarios: imágenes, comprobantes, recibos, documentos (solo metadatos en PostgreSQL) |
+| Principal | PostgreSQL | Datos transaccionales del restaurante: menú, pedidos, pagos, documentos. Usuarios y direcciones se gestionan en MS4. |
+| Archivos | Amazon S3 | Binarios: imágenes de productos, comprobantes, recibos, documentos (solo metadatos en PostgreSQL) |
 | Mensajería | Redis | Pub/Sub para eventos inter-servicios |
 
 ---
@@ -2370,26 +2443,7 @@ Funcionalidad exclusiva de la app móvil del Cliente. Convierte el audio dictado
 
 **Esquema: `ms1`**
 
----
-
-**`usuarios`**
-Almacena todos los usuarios del sistema independientemente de su rol: Administrador, Cajero, Cocina, Repartidor y Cliente.
-
-Relaciones:
-- Un usuario tiene un rol (`rol`: enum `ADMINISTRADOR | CAJERO | COCINA | REPARTIDOR | CLIENTE`).
-- Un usuario de rol CLIENTE puede tener múltiples direcciones → `direcciones`.
-- Un usuario de rol CAJERO puede registrar múltiples pedidos presenciales → `pedidos`.
-- Un usuario puede registrar múltiples documentos → `documentos`.
-
----
-
-**`direcciones`**
-Direcciones de entrega guardadas por los Clientes en su perfil de la app móvil.
-
-Relaciones:
-- Pertenece a un usuario (rol CLIENTE) → `usuarios.id`.
-- Una dirección puede estar marcada como predeterminada (booleano).
-- Una dirección puede estar referenciada por múltiples pedidos delivery en MS2 (referencia por `direccion_id` sin FK cruzada entre microservicios).
+> **Nota:** Las tablas `usuarios` y `direcciones` se movieron a MS4. MS1 referencia usuarios por `usuario_id` (sin FK cruzada) cuando necesita asociar un cajero o cliente a un pedido o documento.
 
 ---
 
@@ -2412,95 +2466,94 @@ Relaciones:
 ---
 
 **`pedidos`**
-Pedidos del restaurante. Unifica pedidos presenciales y delivery bajo un mismo dominio en MS1. Los pedidos delivery son creados originalmente en MS2 y sincronizados a MS1 via GraphQL.
+Pedidos del restaurante. Unifica pedidos presenciales y delivery bajo un mismo dominio en MS1. Los pedidos delivery son creados en MS2 y sincronizados a MS1 via evento Redis.
 
 Relaciones:
 - Tiene un tipo: enum `PRESENCIAL | DELIVERY`.
-- Tiene un estado: enum diferenciado por tipo:
+- Tiene un estado diferenciado por tipo:
   - Presencial: `PENDIENTE | EN_PREPARACION | LISTO | ENTREGADO | CANCELADO`
   - Delivery: `PENDIENTE | CONFIRMADO | EN_PREPARACION | EN_CAMINO | ENTREGADO | CANCELADO`
-- Un pedido presencial es registrado por un Cajero → `usuarios.id` (cajero_id).
-- Un pedido (ambos tipos) puede tener un cliente asociado → `usuarios.id` (cliente_id, nullable para presencial sin cuenta).
-- Un pedido tiene múltiples líneas de producto → `detalle_pedidos`.
-- Un pedido tiene como máximo un pago → `pagos`.
-- Un pedido puede tener un tiempo estimado de preparación asignado (recibido desde MS3 via Redis).
+- Guarda `cajero_id` (referencia sin FK cruzada al usuario cajero en MS4).
+- Guarda `cliente_id` (referencia sin FK cruzada al usuario cliente en MS4, nullable para presencial sin cuenta).
+- Tiene múltiples líneas de producto → `detalle_pedidos`.
+- Tiene como máximo un pago → `pagos`.
+- Tiene un tiempo estimado de preparación (recibido desde MS3 via Redis).
 - Un pedido presencial tiene un número de ficha asignado.
 
 ---
 
 **`detalle_pedidos`**
-Líneas de producto dentro de un pedido. Registra el producto, cantidad y precio al momento del pedido.
+Líneas de producto dentro de un pedido. Snapshot de producto y precio al momento del pedido.
 
 Relaciones:
 - Pertenece a un pedido → `pedidos.id`.
 - Referencia un producto → `productos.id`.
-- El precio unitario se guarda al momento del pedido (no referencia el precio actual del producto para preservar histórico).
+- El precio unitario se guarda al momento del pedido para preservar histórico (no referencia el precio actual).
 
 ---
 
 **`pagos`**
-Registro de pagos de pedidos. Gestiona el método de pago, comprobante y resultado del análisis CNN.
+Registro de pagos de pedidos. Gestiona método de pago, comprobante y resultado del análisis CNN de MS3.
 
 Relaciones:
 - Pertenece a un pedido → `pedidos.id` (relación 1:1).
 - Tiene un método: enum `EFECTIVO | QR`.
 - Tiene un estado: enum `PENDIENTE | ACEPTADO | RECHAZADO | REVISION_MANUAL`.
-- Tiene un comprobante almacenado en S3 (s3_key y URL guardados en la tabla).
+- Tiene comprobante almacenado en S3 (s3_key y URL guardados en la tabla).
 - Al ser aceptado genera un recibo → `recibos`.
 
 ---
 
 **`recibos`**
-Recibos generados al confirmar un pago. Contienen el detalle del pedido y el registro blockchain del hash.
+Recibos generados al confirmar un pago. Incluyen hash SHA-256 y registro blockchain.
 
 Relaciones:
 - Pertenece a un pago → `pagos.id` (relación 1:1).
 - Pertenece a un pedido → `pedidos.id`.
-- Tiene un hash SHA-256 calculado del contenido del recibo.
-- Tiene el `tx_hash` de la transacción blockchain donde se registró el hash.
-- El PDF del recibo se almacena en S3 (s3_key guardado en la tabla).
+- Tiene hash SHA-256 del contenido del recibo.
+- Tiene `tx_hash` de la transacción blockchain registrada via web3j.
+- PDF del recibo almacenado en S3 (s3_key guardado en la tabla).
 
 ---
 
 **`documentos`**
-Documentos administrativos almacenados en S3 con registro de integridad en blockchain. Incluye reportes de cierre de caja y documentos registrados manualmente por el Administrador.
+Documentos administrativos en S3 con registro de integridad blockchain. Incluye reportes de cierre de caja y documentos registrados por el Administrador.
 
 Relaciones:
-- Registrado por un usuario → `usuarios.id` (registrado_por).
+- Guarda `registrado_por_id` (referencia sin FK cruzada al usuario Administrador en MS4).
 - Tiene un tipo: enum `RECIBO_PAGO | CIERRE_CAJA | REPORTE_ADMINISTRATIVO`.
-- Tiene un hash SHA-256 del contenido del documento.
-- Tiene el `tx_hash` de la transacción blockchain.
-- El archivo se almacena en S3 (s3_key y URL guardados en la tabla).
+- Tiene hash SHA-256 del documento.
+- Tiene `tx_hash` de la transacción blockchain.
+- Archivo almacenado en S3 (s3_key y URL guardados en la tabla).
 
 ---
 
 **`configuracion`**
-Parámetros de configuración general del restaurante. Tabla clave-valor para configuración dinámica sin necesidad de redespliegue.
+Parámetros de configuración general del restaurante. Tabla clave-valor para configuración dinámica.
 
 Relaciones:
 - No tiene relaciones con otras tablas.
-- Parámetros almacenados: nombre del restaurante, RUC, dirección, teléfono, horario de atención, tiempo máximo de preparación, umbral de alerta de cocina.
+- Parámetros: nombre del restaurante, RUC, dirección, teléfono, horario, tiempo máximo de preparación, umbral de alerta de cocina.
 
 ---
 
 **Diagrama de relaciones MS1:**
 
 ```
-usuarios ──────────────────────────────┐
-   │                                   │
-   ├── (1:N) direcciones               │
-   │                                   │
-   ├── (1:N) pedidos (como cajero)     │
-   │                                   │
-   └── (1:N) documentos               │
-                                       │
-categorias ──── (1:N) productos        │
-                    │                  │
+categorias ──── (1:N) productos
+                    │
                     └── (1:N) detalle_pedidos ──── (N:1) pedidos
                                                         │
-                                               (1:1) pagos
-                                                    │
-                                           (1:1) recibos
+                                                  (1:1) pagos
+                                                        │
+                                                  (1:1) recibos
+
+pedidos ──── cajero_id (ref. MS4.usuarios, sin FK cruzada)
+        └─── cliente_id (ref. MS4.usuarios, sin FK cruzada, nullable)
+
+documentos ── registrado_por_id (ref. MS4.usuarios, sin FK cruzada)
+
+configuracion (tabla independiente)
 ```
 
 ---
@@ -2733,6 +2786,84 @@ indicadores_bi            (independiente, por tipo y período)
 | PostgreSQL (MS1) | MS1 Spring Boot | `usuarios`, `direcciones`, `categorias`, `productos`, `pedidos`, `detalle_pedidos`, `pagos`, `recibos`, `documentos`, `configuracion` |
 | PostgreSQL (MS2) | MS2 NestJS | `pedidos_delivery`, `detalle_pedidos_delivery`, `asignaciones`, `repartidores_disponibilidad`, `incidencias`, `dispositivos_tokens` |
 | PostgreSQL (MS3) | MS3 FastAPI | `resultados_comprobantes`, `predicciones_tiempo`, `ejecuciones_segmentacion`, `segmentos_clientes`, `indicadores_bi` |
+| DynamoDB | MS0 + MS2 | `EventosDelivery`, `PuntosClaveGPS`, `AuditoriaAccesos` |
+
+---
+
+### 8.4 MS4 - Spring Boot (Usuarios y Autenticación)
+
+#### 8.4.1 Motor de Base de Datos
+
+| Almacenamiento | Motor | Uso |
+|---|---|---|
+| Principal | PostgreSQL | Usuarios, roles y relaciones usuario-rol. Esquema completamente separado del resto. |
+| Certificados | Classpath (`certs/`) | `private.pem` para firmar JWT y `public.pem` para verificación distribuida. |
+
+---
+
+#### 8.4.2 Tablas principales y relaciones
+
+**Esquema: `ms4`**
+
+---
+
+**`usuarios`**
+Almacena todos los usuarios del sistema independientemente de su rol: Administrador, Cajero, Cocina, Repartidor y Cliente. Es la tabla central de identidad del sistema.
+
+Relaciones:
+- Un usuario tiene múltiples roles → `usuario_roles`.
+- Un usuario de rol CLIENTE puede tener múltiples direcciones → `direcciones`.
+- Los demás microservicios (MS1, MS2) referencian usuarios por `usuario_id` sin FK cruzada.
+
+---
+
+**`roles`**
+Catálogo de roles del sistema.
+
+Relaciones:
+- Un rol puede estar asignado a múltiples usuarios → `usuario_roles`.
+- Valores: `ADMINISTRADOR`, `CAJERO`, `COCINA`, `REPARTIDOR`, `CLIENTE`.
+
+---
+
+**`usuario_roles`**
+Tabla de relación muchos a muchos entre usuarios y roles.
+
+Relaciones:
+- Pertenece a un usuario → `usuarios.id`.
+- Pertenece a un rol → `roles.id`.
+
+---
+
+**`direcciones`**
+Direcciones de entrega registradas por los Clientes en su perfil de la app móvil.
+
+Relaciones:
+- Pertenece a un usuario de rol CLIENTE → `usuarios.id`.
+- Una dirección puede estar marcada como predeterminada (booleano).
+- MS2 referencia `direccion_id` para los pedidos delivery (sin FK cruzada entre microservicios).
+
+---
+
+**Diagrama de relaciones MS4:**
+
+```
+usuarios ──── (N:M via usuario_roles) ──── roles
+
+usuarios ──── (1:N) direcciones
+  (rol CLIENTE)
+```
+
+---
+
+**Resumen general del modelo de datos actualizado:**
+
+| Motor | Microservicio | Tablas / Colecciones |
+|---|---|---|
+| PostgreSQL (MS1) | MS1 Spring Boot | `categorias`, `productos`, `pedidos`, `detalle_pedidos`, `pagos`, `recibos`, `documentos`, `configuracion` |
+| PostgreSQL (MS2) | MS2 NestJS | `pedidos_delivery`, `detalle_pedidos_delivery`, `asignaciones`, `repartidores_disponibilidad`, `incidencias`, `dispositivos_tokens` |
+| PostgreSQL (MS3) | MS3 FastAPI | `resultados_comprobantes`, `predicciones_tiempo`, `ejecuciones_segmentacion`, `segmentos_clientes`, `indicadores_bi` |
+| PostgreSQL (MS4) | MS4 Spring Boot | `usuarios`, `roles`, `usuario_roles`, `direcciones` |
 | DynamoDB | MS0 + MS2 | `EventosDelivery`, `PuntosClaveGPS`, `AuditoriaAccesos` |
 
 ---
