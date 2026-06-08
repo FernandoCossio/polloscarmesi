@@ -5,12 +5,14 @@ import com.restaurante.domain.models.Producto;
 import com.restaurante.features.categoria.CategoriaRepository;
 import com.restaurante.features.productos.ProductoRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Component
+@Order(1)
 public class MenuSeeder implements CommandLineRunner {
 
     private final CategoriaRepository categoriaRepository;
