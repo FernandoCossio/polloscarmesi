@@ -40,6 +40,7 @@ export default () => {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
       dynamoDbAuditTable: process.env.DYNAMODB_AUDIT_TABLE || 'polloscarmesi-audit',
+      endpoint: process.env.DYNAMODB_ENDPOINT || '',
     },
     cors: {
       origins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:4200', 'http://localhost:3000'],
