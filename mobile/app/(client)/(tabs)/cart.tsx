@@ -3,11 +3,10 @@ import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity } from 'react
 import { Link, useRouter } from 'expo-router';
 import { useCart } from '../../../context/cart-context';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function CartScreen() {
-  const { items, updateQuantity, removeFromCart, cartTotal, itemCount } = useCart();
+  const { items, updateQuantity, removeFromCart, cartTotal } = useCart();
   const router = useRouter();
 
   if (items.length === 0) {

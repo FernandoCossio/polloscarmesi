@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../../context/cart-context';
 import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
 
 const CATEGORIAS = [
   { id: '1', nombre: 'Combos', icon: 'local_fire_department' },

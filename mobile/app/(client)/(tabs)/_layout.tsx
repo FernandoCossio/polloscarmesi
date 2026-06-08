@@ -3,12 +3,9 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCart } from '../../../context/cart-context';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { itemCount } = useCart();
 
   const CARMESI_COLOR = '#B22222';

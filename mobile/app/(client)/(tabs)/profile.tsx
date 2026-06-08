@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../../context/auth-context';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import React from 'react';
+import { ActivityIndicator, StyleSheet } from 'react-native';
+import { Redirect } from 'expo-router';
 import { useAuth } from '../context/auth-context';
 import { ThemedView } from '@/components/themed-view';
 
 export default function IndexScreen() {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
 
   if (isLoading) {
     return (
