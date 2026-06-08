@@ -3,12 +3,14 @@ import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { HttpModule } from '@nestjs/axios';
 import configuration from './config/configuration';
 import { GatewayModule } from './gateway/gateway.module';
 import { AuditModule } from './audit/audit.module';
 import { GatewayService } from './gateway/gateway.service';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { AuthRestModule } from './auth-rest/auth-rest.module';
+import { ProductosProxyController } from './productos-proxy.controller';
 
 const logger = new Logger('AppModule');
 
@@ -36,15 +38,17 @@ const logger = new Logger('AppModule');
           context: ({ req }) => ({ req }),
           playground: true,
           introspection: true,
+          csrfPrevention: false,
         };
       },
       inject: [GatewayService],
     }),
+    HttpModule,
     GatewayModule,
     AuditModule,
     AuthRestModule,
   ],
-  controllers: [],
+  controllers: [ProductosProxyController],
   providers: [
     {
       provide: APP_INTERCEPTOR,

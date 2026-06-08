@@ -8,6 +8,19 @@ type Query {
   # Categorías
   obtenerCategorias: [Categoria!]!
   obtenerCategoriaPorId(id: ID!): Categoria
+
+  # Pedidos
+  obtenerPedido(id: ID!): Pedido
+  obtenerPedidosPorFecha(fecha: String!): [Pedido!]!
+  obtenerPedidosHistoricos(clienteId: ID!, limit: Int): [Pedido!]!
+  obtenerPedidosActivos: [Pedido!]!
+
+  # Pagos
+  obtenerPago(id: ID!): Pago
+  obtenerPagos: [Pago!]!
+
+  # Cocina
+  obtenerColaCocina: [Pedido!]!
 }
 
 type Mutation {
@@ -22,6 +35,18 @@ type Mutation {
   actualizarDisponibilidadProducto(id: ID!, disponible: Boolean!): Producto!
   subirImagenProducto(id: ID!, file: Upload!): Producto!
   eliminarProducto(id: ID!): Boolean!
+
+  # Pedidos
+  crearPedidoPresencial(input: PedidoInput!): Pedido!
+  cancelarPedido(id: ID!, motivo: String!): Pedido!
+  sincronizarEstadoDelivery(pedidoId: ID!, estado: EstadoPedido!): Pedido!
+  actualizarEstadoCocina(id: ID!, estado: EstadoPedido!): Pedido!
+
+  # Pagos
+  registrarPago(input: PagoInput!): Pago!
+
+  # Cocina
+  actualizarEstadoPedidoCocina(id: ID!, estado: EstadoPedido!): Pedido!
 }
 
 input CategoriaInput {
@@ -35,6 +60,19 @@ input ProductoInput {
   descripcion: String
   precio: Float!
   categoriaId: ID!
+}
+
+input PedidoInput {
+  numeroFicha: String
+  tipo: TipoPedido!
+  descuento: Float
+  clienteId: ID
+  detalles: [DetallePedidoInput!]!
+}
+
+input DetallePedidoInput {
+  productoId: ID!
+  cantidad: Int!
 }
 
 type Producto {
@@ -53,3 +91,74 @@ type Categoria {
   descripcion: String
   icon: String
 }
+
+enum TipoPedido {
+  PRESENCIAL
+  DELIVERY
+}
+
+enum EstadoPedido {
+  PENDIENTE
+  CONFIRMADO
+  EN_PREPARACION
+  EN_CAMINO
+  LISTO
+  ENTREGADO
+  CANCELADO
+}
+
+type Pedido {
+  id: ID!
+  numeroFicha: String
+  tipo: TipoPedido!
+  estado: EstadoPedido!
+  subtotal: Float!
+  descuento: Float!
+  total: Float!
+  tiempoEstimadoPreparacion: Int
+  clienteId: ID
+  motivoCancelacion: String
+  detalles: [DetallePedido!]!
+  fechaCreacion: String!
+}
+
+type DetallePedido {
+  id: ID!
+  producto: Producto!
+  cantidad: Int!
+  precioUnitario: Float!
+  subtotal: Float!
+}
+
+enum MetodoPago {
+  EFECTIVO
+  QR
+}
+
+enum EstadoPago {
+  PENDIENTE
+  ACEPTADO
+  RECHAZADO
+  REVISION_MANUAL
+}
+
+input PagoInput {
+  pedidoId: ID!
+  metodo: MetodoPago!
+  montoRecibido: Float!
+}
+
+type Pago {
+  id: ID!
+  pedidoId: ID!
+  metodo: MetodoPago!
+  estado: EstadoPago!
+  montoRecibido: Float!
+  montoTotal: Float!
+  cambio: Float!
+  comprobanteUrl: String
+  txHash: String
+  fechaCreacion: String!
+}
+
+

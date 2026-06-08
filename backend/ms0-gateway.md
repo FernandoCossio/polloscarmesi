@@ -2,13 +2,14 @@
 
 #### 4.0.1 Responsabilidad y Contexto de Dominio
 
-MS0 es el único punto de entrada público del sistema. Actúa como **GraphQL Gateway** para todos los frontends (Angular y React Native) usando la estrategia de **Schema Stitching**. Su responsabilidad es exclusivamente de infraestructura de comunicación: no contiene lógica de negocio del restaurante ni gestión de usuarios.
+MS0 es el único punto de entrada público del sistema. Actúa como **API Gateway** para los frontends, exponiendo un endpoint **GraphQL** (`/graphql`) y endpoints **REST** puntuales. Su responsabilidad es exclusivamente de infraestructura de comunicación: no contiene lógica de negocio del restaurante ni gestión de usuarios.
 
-Al iniciar, MS0 descarga remotamente los schemas GraphQL de MS1, MS2 y MS3 y los unifica en un único Superschema. El frontend realiza todas sus queries y mutations contra MS0 en un único endpoint `/graphql`. MS0 delega cada operación al microservicio propietario del tipo correspondiente.
+Al iniciar, MS0 descarga remotamente el schema GraphQL de los microservicios configurados via introspection, lo envuelve y lo expone en un único schema en `/graphql`. Cada operación GraphQL se delega al microservicio remoto correspondiente. Además, MS0 ofrece endpoints REST que delegan a otros microservicios.
 
-Centraliza dos funciones críticas:
-- **Autorización:** valida tokens JWT emitidos por MS4 y verifica que el rol del usuario tenga permiso para ejecutar la operación GraphQL solicitada via guards declarativos por operación.
-- **Schema Stitching:** unifica los schemas GraphQL de MS1, MS2 y MS3 en un Superschema y delega cada operación al microservicio correcto.
+En la lógica actual, MS0 no “autoriza” centralizadamente las operaciones. En su lugar:
+- **Propaga el JWT**: si el request trae `Authorization: Bearer <token>`, MS0 reenvía ese header a los microservicios al delegar la operación (GraphQL y proxy REST).
+- **Obtiene `req.user` (sin bloquear)**: en un middleware global, MS0 intenta verificar de forma liviana el JWT (firma RSA y `exp/nbf`) usando la clave pública de MS4 para poblar `req.user` (ej. `{ userId, role }`). Si el token es inválido o está expirado, simplemente no se setea `req.user`; la petición aún puede continuar y el microservicio destino decide si rechaza por autenticación/autorización.
+- **Auditoría**: registra operaciones REST/GraphQL y, si existe, asocia `userId/role` desde `req.user`.
 
 Ningún microservicio interno (MS1, MS2, MS3, MS4) está expuesto públicamente. Solo MS0 tiene URL pública accesible desde internet. La autenticación y gestión de usuarios es responsabilidad exclusiva de MS4.
 
@@ -20,11 +21,13 @@ Ningún microservicio interno (MS1, MS2, MS3, MS4) está expuesto públicamente.
 |---|---|
 | Framework | NestJS (TypeScript) |
 | GraphQL Gateway | `@nestjs/graphql` + `@graphql-tools/stitch` + `@graphql-tools/wrap` |
-| Schema remoto | `@graphql-tools/executor-http` para descargar schemas de MS1/MS2/MS3 |
-| Validación JWT | `@nestjs/jwt` + `@nestjs/passport` + `passport-jwt` (verifica tokens emitidos por MS4) |
-| Autorización | Guards por operación GraphQL con decorador `@Roles()` |
-| Cliente HTTP | `@nestjs/axios` para llamadas REST a MS4 (auth) |
-| Cliente DynamoDB | `@aws-sdk/client-dynamodb` |
+| Schema remoto | `@graphql-tools/executor-http` (introspection remota) |
+| JWT (para `req.user`) | Verificación ligera con `crypto` (firma RSA + `exp/nbf`) usando clave pública de MS4 |
+| Propagación de JWT | Reenvío del header `Authorization` hacia los microservicios al delegar operaciones |
+| Cliente HTTP | `@nestjs/axios` + `axios` + `rxjs` (REST hacia MS4 y proxy REST hacia MS1) |
+| Subida de archivos (proxy) | `@nestjs/platform-express` (multer) + `form-data` |
+| Documentación REST | `@nestjs/swagger` + `swagger-ui-express` |
+| Cliente DynamoDB | `@aws-sdk/client-dynamodb` + `@aws-sdk/util-dynamodb` |
 | Variables de entorno | `@nestjs/config` |
 
 ---
@@ -42,24 +45,24 @@ MS0 no tiene base de datos propia. Escribe logs de auditoría directamente en **
 #### 4.0.4 Módulos y Casos de Uso
 
 **Módulo Auth (REST):**
-- `POST /api/auth/login` — Recibe credenciales, delega validación a MS4 via REST, retorna JWT emitido por MS4.
-- `POST /api/auth/logout` — Registra el evento en DynamoDB.
-- `POST /api/auth/registro` — Delega el registro de nuevos Clientes a MS4 via REST.
+- `POST /auth/login` — Recibe credenciales, delega validación a MS4 via REST y retorna el JWT emitido por MS4.
+- `POST /auth/register` — Delega el registro de nuevos Clientes a MS4 via REST.
 
 **Módulo Schema Stitching (GraphQL Gateway):**
-- Al iniciar la aplicación, descarga el schema GraphQL de MS1, MS2 y MS3 via introspection.
-- Unifica los tres schemas en un Superschema con `@graphql-tools/stitch`.
-- Expone el Superschema unificado en el endpoint `/graphql`.
+- Al iniciar la aplicación, descarga el schema GraphQL del microservicio remoto configurado (actualmente MS1) via introspection.
+- Construye el schema del gateway envolviendo el schema remoto y exponiéndolo en `/graphql`.
 - En cada operación GraphQL entrante:
-  - Valida el JWT del header `Authorization` usando la clave pública de MS4.
-  - Verifica el rol del usuario contra la operación solicitada.
-  - Inyecta el contexto `{ userId, role }` en el request delegado.
-  - Delega la operación al microservicio propietario del tipo/resolver correspondiente.
-- Recarga automáticamente los schemas remotos si un microservicio se reinicia (polling configurable).
+  - Usa el contexto `{ req }` para acceder a headers/usuario.
+  - Reenvía el header `Authorization` hacia el microservicio remoto al ejecutar la operación (sin bloquear ni imponer roles en el gateway).
+  - Delega la resolución al microservicio remoto.
+- Recarga automáticamente el schema remoto con polling configurable.
+
+**Proxy de archivos (REST):**
+- `POST /productos/:id/imagen` — Recibe `multipart/form-data` (campo `file`) y reenvía el archivo a MS1 via REST, propagando `Authorization` si está presente.
 
 **Módulo Auditoría:**
 - Registra en DynamoDB cada operación GraphQL ejecutada: `timestamp`, `userId`, `role`, `operationName`, `operationType`, `statusCode`, `ip`.
-- Registra eventos críticos: login exitoso, login fallido, acceso denegado por rol.
+- Registra también operaciones REST expuestas por el gateway (auth y proxy), asociando `userId/role` si el request trae un JWT válido (según la extracción de `req.user`).
 
 **Tabla de permisos por operación GraphQL:**
 
@@ -82,43 +85,32 @@ MS0 no tiene base de datos propia. Escribe logs de auditoría directamente en **
 #### 4.0.5 Estructura de Carpetas y Descripción de Capas
 
 ```
-ms0-api-gateway/
+gateway/
 ├── src/
-│   ├── auth/                              # Módulo de autenticación REST
-│   │   ├── auth.module.ts
-│   │   ├── auth.controller.ts             # Endpoints REST: /api/auth/login, logout, registro
-│   │   ├── auth.service.ts                # Delega auth a MS4, valida tokens JWT emitidos por MS4
-│   │   ├── strategies/
-│   │   │   └── jwt.strategy.ts            # Estrategia Passport para validar JWT en GraphQL (usa clave pública de MS4)
-│   │   └── guards/
-│   │       ├── jwt-auth.guard.ts          # Guard que valida el JWT en cada operación GraphQL
-│   │       └── roles.guard.ts             # Guard que verifica el rol por operación GraphQL
+│   ├── auth-rest/                         # Auth REST (delegación a MS4)
+│   │   ├── dto/                           # DTOs request/response
+│   │   ├── auth-rest.controller.ts        # Endpoints REST: /auth/login, /auth/register
+│   │   ├── auth-rest.module.ts
+│   │   └── auth-rest.service.ts           # Llamadas REST a MS4
 │   │
 │   ├── gateway/                           # Módulo de Schema Stitching (núcleo del gateway)
 │   │   ├── gateway.module.ts
-│   │   ├── gateway.service.ts             # Descarga schemas remotos y construye el Superschema
-│   │   ├── gateway.plugin.ts              # Plugin Apollo para inyectar contexto JWT en cada operación
-│   │   └── permissions.config.ts          # Mapa declarativo: operación GraphQL → roles permitidos
+│   │   └── gateway.service.ts             # Descarga schema remoto (MS1) y construye el schema del gateway
 │   │
 │   ├── audit/                             # Módulo de auditoría en DynamoDB
 │   │   ├── audit.module.ts
 │   │   ├── audit.service.ts               # Escritura de eventos en DynamoDB
 │   │   └── audit.interceptor.ts           # Interceptor que captura cada operación GraphQL
 │   │
-│   ├── common/                            # Utilidades transversales
-│   │   ├── decorators/
-│   │   │   └── roles.decorator.ts         # Decorador @Roles() para permisos por operación
-│   │   ├── filters/
-│   │   │   └── graphql-exception.filter.ts # Formato estándar de errores GraphQL
-│   │   └── interfaces/
-│   │       └── jwt-payload.interface.ts   # Interfaz del payload JWT: { userId, role, iat, exp }
-│   │
 │   ├── config/
 │   │   └── configuration.ts               # Lectura de variables de entorno
 │   │
+│   ├── productos-proxy.controller.ts      # Proxy REST para subida de imagen de producto hacia MS1
 │   ├── app.module.ts                      # Módulo raíz: registra GraphQLModule con Schema Stitching
 │   └── main.ts                            # Bootstrap, CORS, puerto
 │
+├── test/
+│   └── jest-e2e.json
 ├── .env
 ├── Dockerfile
 ├── package.json
@@ -127,10 +119,10 @@ ms0-api-gateway/
 
 **Descripción de capas:**
 
-- **`auth/`:** Responsable de login, logout y registro via REST. Delega todas las operaciones de auth a MS4. Valida tokens JWT emitidos por MS4 usando su clave pública.
-- **`gateway/`:** Núcleo del Gateway. Descarga schemas de MS1/MS2/MS3 al iniciar, los une con Schema Stitching y expone el Superschema en `/graphql`. El plugin inyecta el contexto de identidad en cada operación delegada.
+- **`auth-rest/`:** Responsable de login y registro via REST. Delega estas operaciones a MS4.
+- **`gateway/`:** Núcleo del Gateway. Descarga el schema remoto (actualmente MS1) al iniciar, lo expone en `/graphql` y reenvía el header `Authorization` al delegar operaciones.
 - **`audit/`:** Capa transversal de observabilidad. El interceptor captura automáticamente cada operación sin modificar la lógica del gateway.
-- **`common/`:** Decoradores de roles, filtro de errores GraphQL e interfaces compartidas.
+- **`productos-proxy.controller.ts`:** Endpoint REST para subida de archivos que actúa como pasarela hacia MS1.
 - **`config/`:** Centraliza la lectura de variables de entorno.
 
 ---
@@ -163,16 +155,18 @@ MS0 **no publica ni consume eventos de Redis**. Su comunicación es exclusivamen
 | Variable | Descripción |
 |---|---|
 | `PORT` | Puerto del servidor (default: 4000) |
-| `MS4_JWT_PUBLIC_KEY` | Clave pública de MS4 para verificar tokens JWT |
-| `MS1_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS1 |
-| `MS4_REST_URL` | URL interna de MS4 para llamadas REST de auth |
-| `MS2_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS2 |
-| `MS3_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS3 |
+| `MS4_REST_URL` | URL interna base de MS4 para llamadas REST (default en config: `http://localhost:8081/api`) |
+| `MS4_JWT_PUBLIC_KEY_PATH` | Ruta al archivo PEM con la clave pública de MS4 (default: `./certs/public.pem`) |
+| `MS1_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS1 (default: `http://localhost:8082/api/graphql`) |
+| `MS1_REST_URL` | URL REST interna de MS1 (default: `http://localhost:8082/api`) |
+| `MS2_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS2 (configurado aunque no se usa en la lógica actual del stitching) |
+| `MS3_GRAPHQL_URL` | URL del endpoint GraphQL interno de MS3 (configurado aunque no se usa en la lógica actual del stitching) |
 | `SCHEMA_POLL_INTERVAL_MS` | Intervalo de recarga de schemas remotos en ms (default: 30000) |
 | `AWS_REGION` | Región AWS para DynamoDB |
 | `AWS_ACCESS_KEY_ID` | Credencial AWS |
 | `AWS_SECRET_ACCESS_KEY` | Credencial AWS |
 | `DYNAMODB_AUDIT_TABLE` | Nombre de la tabla DynamoDB de auditoría |
+| `DYNAMODB_ENDPOINT` | Endpoint custom para DynamoDB, opcional |
 | `CORS_ORIGINS` | Orígenes permitidos para CORS (URLs de los frontends) |
 
 ---

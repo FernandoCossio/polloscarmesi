@@ -22,7 +22,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 | Base de datos | PostgreSQL via JDBC |
 | GraphQL servidor | Spring for GraphQL (`spring-boot-starter-graphql`) |
 | GraphQL cliente | No aplica — MS1 usa REST para llamadas inter-servicios a MS2 y MS3 |
-| Seguridad | Spring Security (validación de headers internos de MS0) |
+| Seguridad | Spring Security + OAuth2 Resource Server (validación JWT con clave pública de MS4) |
 | Almacenamiento S3 | AWS SDK for Java v2 (`software.amazon.awssdk`) |
 | Blockchain | web3j para interacción con smart contract Solidity |
 | Mensajería Redis | Spring Data Redis (`spring-boot-starter-data-redis`) |
@@ -130,7 +130,7 @@ ms-restaurante/
 
 #### 4.1.6 Esquema GraphQL (Queries y Mutations expuestos a MS2 y MS3)
 
-MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0. Los tipos y operaciones aquí definidos son la fuente de verdad del dominio de gestión del restaurante. Las consultas de usuarios y clientes se delegan a MS4.
+MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0. Los tipos y operaciones aquí definidos son la fuente de verdad del dominio de gestión del restaurante.
 
 ```graphql
 type Query {
@@ -249,143 +249,3 @@ Todos los endpoints requieren un token JWT válido emitido por MS4.
 | `MS4_JWT_PUBLIC_KEY` | Clave pública para validar tokens JWT de MS4 |
 
 ---
-
-### 4.2 MS4 - Autenticación y Usuarios (Spring Boot)
-
-#### 4.2.1 Responsabilidad y Contexto de Dominio
-
-MS4 es el microservicio dedicado a la gestión de usuarios, autenticación y autorización. Se encarga de:
-- Generación y validación de tokens JWT
-- Registro y gestión de usuarios (clientes y personal interno)
-- Gestión de roles y permisos
-- Carga inicial de datos (seed)
-- Envío de correos electrónicos
-
-MS4 expone endpoints REST para autenticación y gestión de usuarios, y actúa como OAuth2 Authorization Server emitiendo tokens JWT que son validados por los otros microservicios (MS1, MS2, MS3).
-
-#### 4.2.2 Tecnología Principal
-
-| Elemento | Tecnología |
-|---|---|
-| Framework | Spring Boot 4.x (Java 21) |
-| ORM | Spring Data JPA + Hibernate |
-| Base de datos | PostgreSQL via JDBC |
-| Seguridad | Spring Security + JWT (con claves pública/privada) |
-| Validación | Spring Validation (jakarta.validation) |
-| Documentación | SpringDoc OpenAPI (Swagger) |
-| Email | Spring Boot Starter Mail |
-| Variables de entorno | Spring Boot + springboot4-dotenv |
-
-#### 4.2.3 Base de Datos Utilizada
-
-| Almacenamiento | Uso |
-|---|---|
-| PostgreSQL | Almacena usuarios, roles y relaciones entre ellos |
-| Certificados (resources/certs) | Claves pública y privada para firmar/verificar tokens JWT |
-
-#### 4.2.4 Módulos y Casos de Uso
-
-**Módulo de Autenticación**
-- Inicio de sesión (login) con credenciales (username/contraseña)
-- Generación de tokens JWT con roles integrados
-- Validación de tokens (para otros microservicios)
-
-**Módulo de Usuarios**
-- Registro de nuevos clientes
-- CRUD de usuarios internos (solo Administrador)
-- Consulta de perfil de usuario autenticado
-- Actualización de datos de perfil
-- Activación/desactivación de usuarios
-- Gestión de direcciones de entrega para clientes
-
-**Módulo de Roles**
-- Definición y gestión de roles (Administrador, Cajero, Cocina, Repartidor, Cliente)
-- Asignación de roles a usuarios
-
-#### 4.2.5 Estructura de Carpetas y Descripción de Capas
-
-```
-auth/
-├── src/
-│   └── main/
-│       ├── java/com/auth/
-│       │   ├── auth/                          # Capa de autenticación y seguridad
-│       │   │   ├── jwt/                       # Servicios de generación y validación de tokens JWT
-│       │   │   └── userdetails/               # Implementación de UserDetails para Spring Security
-│       │   ├── common/                        # Componentes comunes y utilidades
-│       │   │   ├── decorators/                # Decoradores y anotaciones personalizadas
-│       │   │   ├── errors/                    # Manejador global de excepciones y definiciones de errores
-│       │   │   └── response/                  # Wrappers de respuestas API estandarizadas
-│       │   ├── config/                        # Configuración de Spring Boot
-│       │   │   ├── JwtConfig.java
-│       │   │   ├── OpenApiConfig.java
-│       │   │   ├── SecurityConfig.java
-│       │   │   └── WebConfig.java
-│       │   ├── domain/                        # Capa de dominio (modelos y DTOs)
-│       │   │   ├── dtos/                      # Objetos de transferencia de datos
-│       │   │   │   ├── auth/
-│       │   │   │   └── usuario/
-│       │   │   ├── enums/                     # Enumeraciones del dominio
-│       │   │   └── models/                    # Entidades JPA del dominio
-│       │   ├── features/                      # Módulos de funcionalidad (features)
-│       │   │   ├── auth/                      # Feature de autenticación
-│       │   │   ├── rol/                       # Feature de gestión de roles
-│       │   │   └── usuario/                   # Feature de gestión de usuarios
-│       │   ├── seed/                          # Carga inicial de datos
-│       │   ├── services/                      # Servicios de infraestructura externos
-│       │   │   └── email/                     # Servicio de envío de correos
-│       │   └── AuthApplication.java           # Clase principal de Spring Boot
-│       └── resources/
-│           ├── application.properties         # Configuración de la aplicación
-│           └── certs/                         # Certificados para JWT
-│               ├── private.pem                # Clave privada para firmar tokens
-│               └── public.pem                 # Clave pública para verificar tokens
-│
-├── .env
-├── .env.example
-├── pom.xml
-└── mvnw / mvnw.cmd
-```
-
-**Descripción de capas y módulos:**
-
-- **`auth/`:** Contiene la lógica de seguridad: generación y validación de tokens JWT (`jwt/`), y la implementación de `UserDetailsService` para integración con Spring Security (`userdetails/`).
-- **`common/`:** Componentes reutilizables: decoradores personalizados (ej: `@CurrentUserId`), manejador global de excepciones, y wrappers de respuestas API estandarizadas.
-- **`config/`:** Clases de configuración de Spring Boot: seguridad, JWT, OpenAPI (Swagger), y configuración web.
-- **`domain/`:** Capa de dominio central:
-  - **`dtos/`:** Objetos de transferencia de datos para requests y responses.
-  - **`enums/`:** Enumeraciones del dominio (ej: `RolNombre`).
-  - **`models/`:** Entidades JPA que mapean las tablas de PostgreSQL (ej: `Usuario`, `Rol`).
-- **`features/`:** Módulos organizados por funcionalidades de negocio. Cada feature contiene Controller, Service, Repository y Exceptions específicas.
-- **`seed/`:** Componentes para carga inicial de datos en la base de datos (roles y usuarios de prueba).
-- **`services/`:** Adaptadores de servicios externos: envío de emails.
-- **`resources/certs/`:** Certificados para firma y verificación de tokens JWT.
-
-#### 4.2.6 Endpoints REST
-
-| Método | Endpoint | Descripción | Rol requerido |
-|---|---|---|---|
-| POST | `/api/auth/login` | Inicio de sesión, retorna token JWT | Público |
-| POST | `/api/auth/register` | Registro de nuevo cliente | Público |
-| GET | `/api/usuarios` | Listar usuarios internos | Administrador |
-| POST | `/api/usuarios` | Crear usuario interno | Administrador |
-| PUT | `/api/usuarios/{id}` | Editar usuario | Administrador |
-| PATCH | `/api/usuarios/{id}/estado` | Activar/desactivar usuario | Administrador |
-| GET | `/api/usuarios/me` | Obtener perfil del usuario autenticado | Todos |
-
-#### 4.2.7 Variables de Entorno
-
-| Variable | Descripción |
-|---|---|
-| `SERVER_PORT` | Puerto del servidor (default: 8081) |
-| `SPRING_DATASOURCE_URL` | URL de conexión PostgreSQL (db auth_restaurante) |
-| `SPRING_DATASOURCE_USERNAME` | Usuario PostgreSQL |
-| `SPRING_DATASOURCE_PASSWORD` | Contraseña PostgreSQL |
-| `SPRING_JPA_HIBERNATE_DDL_AUTO` | Estrategia DDL (validate en producción) |
-| `APP_JWT_ISSUER` | Emisor de tokens JWT |
-| `APP_JWT_ACCESS_TOKEN_TTL` | Tiempo de vida de tokens de acceso |
-| `SPRING_MAIL_HOST` | Host de servidor de correo |
-| `SPRING_MAIL_PORT` | Puerto de servidor de correo |
-| `SPRING_MAIL_USERNAME` | Usuario de correo |
-| `SPRING_MAIL_PASSWORD` | Contraseña de correo |
-| `APP_BASE_URL` | URL base del microservicio |

@@ -61,6 +61,20 @@ public enum ErrorCode {
     PRODUCTO_DUPLICADA("PRD201", HttpStatus.CONFLICT, "El nombre del producto ya existe"),
 
     // -------------------------------------------------------------------------
+    // PED — Pedidos
+    // -------------------------------------------------------------------------
+    PEDIDO_NO_ENCONTRADO("PED101", HttpStatus.NOT_FOUND, "Pedido no encontrado"),
+    PEDIDO_ESTADO_INVALIDO("PED201", HttpStatus.CONFLICT, "Estado de pedido inválido o acción no permitida"),
+
+    // -------------------------------------------------------------------------
+    // PAG — Pagos
+    // -------------------------------------------------------------------------
+    PAGO_NO_ENCONTRADO("PAG101", HttpStatus.NOT_FOUND, "Pago no encontrado"),
+    PAGO_INVALIDO("PAG201", HttpStatus.CONFLICT, "Transacción de pago inválida o rechazada"),
+
+
+
+    // -------------------------------------------------------------------------
     // VAL — Validación de campos
     // -------------------------------------------------------------------------
     VALIDACION_CAMPO("VAL301", HttpStatus.BAD_REQUEST, "Error de validación en la solicitud"),

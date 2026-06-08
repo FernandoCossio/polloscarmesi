@@ -15,6 +15,11 @@ export const appRoutes: Routes = [
                 path: 'categorias', 
                 loadComponent: () => import('./app/features/categoria/pages/list/list').then(m => m.List),
                 canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'productos',
+                loadComponent: () => import('./app/features/producto/pages/list/list').then(m => m.List),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
             }
         ]
     },

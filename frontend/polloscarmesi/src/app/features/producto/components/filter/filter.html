@@ -1,0 +1,50 @@
+<div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row flex-1 gap-4">
+        <!-- Search bar -->
+        <div class="w-full sm:w-80">
+            <p-iconfield>
+                <p-inputicon class="pi pi-search"></p-inputicon>
+                <input 
+                    pInputText 
+                    type="text" 
+                    placeholder="Buscar por nombre de producto..." 
+                    class="w-full"
+                    (input)="onSearchInput($event)"
+                />
+            </p-iconfield>
+        </div>
+
+        <!-- Category Dropdown Filter -->
+        <div class="w-full sm:w-60">
+            <p-select 
+                [options]="dropdownOptions" 
+                optionLabel="nombre" 
+                optionValue="id"
+                class="w-full"
+                placeholder="Todas las categorías"
+                (onChange)="onCategoriaChange($event)">
+                <ng-template #selectedItem let-selectedOption>
+                    <div class="flex items-center gap-2" *ngIf="selectedOption">
+                        <span class="material-symbols-outlined text-xl" *ngIf="selectedOption.icon">{{ selectedOption.icon }}</span>
+                        <span class="font-medium">{{ selectedOption.nombre }}</span>
+                    </div>
+                </ng-template>
+                <ng-template #item let-option>
+                    <div class="flex items-center gap-2 py-1">
+                        <span class="material-symbols-outlined text-xl" *ngIf="option.icon">{{ option.icon }}</span>
+                        <span>{{ option.nombre }}</span>
+                    </div>
+                </ng-template>
+            </p-select>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <button 
+        pButton 
+        type="button" 
+        label="Nuevo Producto" 
+        icon="pi pi-plus" 
+        (click)="newProductClick.emit()">
+    </button>
+</div>

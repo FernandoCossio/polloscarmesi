@@ -10,6 +10,8 @@ import com.restaurante.domain.models.Categoria;
 import com.restaurante.domain.models.Producto;
 import com.restaurante.features.categoria.CategoriaRepository;
 import com.restaurante.services.ImageStorageService;
+import com.restaurante.services.StorageOptions;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 public class ProductoService {
@@ -111,19 +114,22 @@ public class ProductoService {
 
     @Transactional
     public ProductoResponse uploadImage(Long id, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo de imagen no puede estar vacío");
+        }
+
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(ProductoNoEncontradoException::new);
 
-        // Borrar imagen anterior si existía
         if (producto.getImagenUrl() != null) {
             try {
                 imageStorageService.delete(producto.getImagenUrl());
             } catch (IOException e) {
-                // Loguear pero continuar para no bloquear
+                log.warn("No se pudo eliminar la imagen anterior del producto ID {}: {}", id, e.getMessage());
             }
         }
 
-        String savedPath = imageStorageService.store(file);
+        String savedPath = imageStorageService.store(file, new StorageOptions("productos"));
         producto.setImagenUrl(savedPath);
 
         Producto updated = productoRepository.save(producto);

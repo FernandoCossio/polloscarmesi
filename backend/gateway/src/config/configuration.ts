@@ -25,6 +25,7 @@ export default () => {
     microservices: {
       ms1: {
         graphqlUrl: process.env.MS1_GRAPHQL_URL || 'http://localhost:8082/api/graphql',
+        restUrl: process.env.MS1_REST_URL || 'http://localhost:8082/api',
       },
       ms2: {
         graphqlUrl: process.env.MS2_GRAPHQL_URL || 'http://localhost:3001/graphql',
@@ -39,6 +40,7 @@ export default () => {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
       dynamoDbAuditTable: process.env.DYNAMODB_AUDIT_TABLE || 'polloscarmesi-audit',
+      endpoint: process.env.DYNAMODB_ENDPOINT || '',
     },
     cors: {
       origins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:4200', 'http://localhost:3000'],

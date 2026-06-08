@@ -40,7 +40,8 @@ export class AppMenu {
                 {
                     label: 'Gestión',
                     items: [
-                        { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categorias'] }
+                        { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categorias'] },
+                        { label: 'Productos', icon: 'pi pi-fw pi-shopping-bag', routerLink: ['/productos'] }
                     ]
                 }
             ];
