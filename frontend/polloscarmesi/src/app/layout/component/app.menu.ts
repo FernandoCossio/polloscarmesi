@@ -41,7 +41,10 @@ export class AppMenu {
                     label: 'Gestión',
                     items: [
                         { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categorias'] },
-                        { label: 'Productos', icon: 'pi pi-fw pi-shopping-bag', routerLink: ['/productos'] }
+                        { label: 'Productos', icon: 'pi pi-fw pi-shopping-bag', routerLink: ['/productos'] },
+                        { label: 'Registrar Pedido', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/registrar-pedido'] },
+                        { label: 'Historial de Pedidos', icon: 'pi pi-fw pi-history', routerLink: ['/historial-pedidos'] },
+                        { label: 'Cola de Cocina', icon: 'pi pi-fw pi-list-check', routerLink: ['/cola-pedidos'] }
                     ]
                 }
             ];
@@ -64,7 +67,7 @@ export class AppMenu {
                 {
                     label: 'Cocina',
                     items: [
-                        
+                        { label: 'Cola de Cocina', icon: 'pi pi-fw pi-list-check', routerLink: ['/cola-pedidos'] }
                     ]
                 }
             ];

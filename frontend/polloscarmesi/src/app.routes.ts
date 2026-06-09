@@ -35,6 +35,11 @@ export const appRoutes: Routes = [
                 path: 'historial-pedidos',
                 loadComponent: () => import('./app/features/pedido/pages/historial-pedidos/historial-pedidos').then(m => m.HistorialPedidos),
                 canActivate: [authGuard, roleGuard(ROLES.CAJERO)]
+            },
+            {
+                path: 'cola-pedidos',
+                loadComponent: () => import('./app/features/pedido/pages/cola-pedidos/cola-pedidos').then(m => m.ColaPedidos),
+                canActivate: [authGuard, roleGuard([ROLES.COCINA, ROLES.ADMINISTRADOR])]
             }
         ]
     },
