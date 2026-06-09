@@ -1,9 +1,13 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 
+from app.services.segmentacion_clientes_service import (
+    clasificar_cliente,
+)
 from app.services.tiempo_pedidos_service import (
     estimar_tiempo_pedido as predecir_tiempo_pedido,
 )
@@ -40,6 +44,25 @@ class TiempoPedidoPayload:
     requiere_coccion: RequiereCoccion
 
 
+@strawberry.input
+class SegmentacionClienteInput:
+    cliente_id: int
+    cantidad_pedidos: int
+    ticket_promedio: float
+    dias_desde_ultima_compra: int
+    cantidad_pedidos_promocion: int
+
+
+@strawberry.type
+class SegmentacionClientePayload:
+    cliente_id: int
+    numero_segmento: int
+    etiqueta_segmento: str
+    origen_segmentacion: str
+    cluster_kmeans: Optional[int]
+    distancia_al_centroide: Optional[float]
+
+
 @strawberry.type
 class Query:
     @strawberry.field(name="estadoMsia")
@@ -55,16 +78,24 @@ class Mutation:
         input: TiempoPedidoInput,
     ) -> TiempoPedidoPayload:
         if input.cantidad_items <= 0:
-            raise ValueError("La cantidad de ítems debe ser mayor que cero.")
+            raise ValueError(
+                "La cantidad de ítems debe ser mayor que cero."
+            )
 
         if input.total_pedido < 0:
-            raise ValueError("El total del pedido no puede ser negativo.")
+            raise ValueError(
+                "El total del pedido no puede ser negativo."
+            )
 
         if input.pedidos_pendientes < 0:
-            raise ValueError("Los pedidos pendientes no pueden ser negativos.")
+            raise ValueError(
+                "Los pedidos pendientes no pueden ser negativos."
+            )
 
         if input.distancia_km < 0:
-            raise ValueError("La distancia no puede ser negativa.")
+            raise ValueError(
+                "La distancia no puede ser negativa."
+            )
 
         tiempo_estimado = predecir_tiempo_pedido(
             fecha_hora_pedido=input.fecha_hora_pedido,
@@ -80,6 +111,44 @@ class Mutation:
             tiempo_estimado_min=tiempo_estimado,
             tipo_pedido=input.tipo_pedido,
             requiere_coccion=input.requiere_coccion,
+        )
+
+    @strawberry.mutation(name="segmentarCliente")
+    def segmentar_cliente(
+        self,
+        input: SegmentacionClienteInput,
+    ) -> SegmentacionClientePayload:
+        if input.cliente_id <= 0:
+            raise ValueError(
+                "El ID del cliente debe ser mayor que cero."
+            )
+
+        resultado = clasificar_cliente(
+            cantidad_pedidos=input.cantidad_pedidos,
+            ticket_promedio=input.ticket_promedio,
+            dias_desde_ultima_compra=(
+                input.dias_desde_ultima_compra
+            ),
+            cantidad_pedidos_promocion=(
+                input.cantidad_pedidos_promocion
+            ),
+        )
+
+        return SegmentacionClientePayload(
+            cliente_id=input.cliente_id,
+            numero_segmento=resultado["numero_segmento"],
+            etiqueta_segmento=resultado[
+                "etiqueta_segmento"
+            ],
+            origen_segmentacion=resultado[
+                "origen_segmentacion"
+            ],
+            cluster_kmeans=resultado[
+                "cluster_kmeans"
+            ],
+            distancia_al_centroide=resultado[
+                "distancia_al_centroide"
+            ],
         )
 
 

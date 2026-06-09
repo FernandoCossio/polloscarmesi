@@ -6,7 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import get_logger
 from app.graphql.schema import graphql_router
 from app.services.tiempo_pedidos_service import init_tiempo_pedidos_service
-
+from app.services.segmentacion_clientes_service import (
+    init_segmentacion_clientes_service,
+)
 logger = get_logger("Main")
 
 
@@ -15,7 +17,8 @@ async def lifespan(app: FastAPI):
     logger.info("Iniciando Microservicio de IA...")
 
     init_tiempo_pedidos_service()
-
+    init_segmentacion_clientes_service()
+    
     logger.info("GraphQL disponible en /graphql")
 
     try:
