@@ -3,3 +3,6 @@ uvicorn[standard]
 strawberry-graphql[fastapi]
 python-dotenv
 python-multipart
+pandas==2.2.2
+scikit-learn==1.6.1
+joblib==1.5.3
