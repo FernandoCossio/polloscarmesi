@@ -1,0 +1,30 @@
+.order-registration-card {
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-200);
+  border-radius: var(--p-border-radius-xl);
+  padding: 1.5rem;
+}
+
+.order-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  flex-grow: 1;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 2.8fr 1.2fr;
+  }
+}
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-section {
+  display: flex;
+  flex-direction: column;
+}

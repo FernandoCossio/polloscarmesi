@@ -1,0 +1,16 @@
+.header-container {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--p-surface-900);
+    margin: 0 0 0.25rem 0;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--p-text-muted-color);
+    margin: 0;
+  }
+}
