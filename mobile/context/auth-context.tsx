@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { MobileRole } from '../constants/roles';
+import { MobileRole, mapBackendRoleToMobile } from '../constants/roles';
+import { AuthService, decodeJwt } from '../services/auth-service';
 
 interface User {
   username: string;
@@ -9,7 +10,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, role: MobileRole) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -27,11 +28,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadSession();
   }, []);
 
-  const login = async (username: string, role: MobileRole) => {
+  const login = async (username: string, password: string) => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setUser({ username, role });
-    setIsLoading(false);
+    try {
+      const data = await AuthService.login(username, password);
+      const payload = decodeJwt(data.accessToken);
+      
+      if (!payload) {
+        throw new Error('Token JWT inválido o corrupto');
+      }
+
+      const backendRole = payload.role || (payload.roles && payload.roles[0]) || 'Cliente';
+      const mobileRole = mapBackendRoleToMobile(backendRole);
+      const userVal = payload.username || payload.userId || payload.sub || username;
+
+      setUser({
+        username: userVal,
+        role: mobileRole,
+      });
+    } catch (error) {
+      setUser(null);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {

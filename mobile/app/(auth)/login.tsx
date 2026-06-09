@@ -4,25 +4,29 @@ import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/auth-context';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { MobileRole } from '../../constants/roles';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const [loadingRole, setLoadingRole] = useState<MobileRole | null>(null);
   const router = useRouter();
 
-  const handleLogin = async (role: MobileRole) => {
-    setLoadingRole(role);
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      alert('Por favor ingrese su correo electrónico/usuario y contraseña.');
+      return;
+    }
+    setLoading(true);
     try {
-      const username = email ? email.split('@')[0] : role === 'client' ? 'Fernando' : 'Carlos';
-      await login(username, role);
+      await login(email.trim(), password.trim());
       router.replace('/');
     } catch (error) {
       console.error(error);
+      alert(error instanceof Error ? error.message : 'Error al iniciar sesión. Verifique sus credenciales.');
     } finally {
-      setLoadingRole(null);
+      setLoading(false);
     }
   };
 
@@ -36,17 +40,18 @@ export default function LoginScreen() {
         />
         <Text style={styles.brandName}>
           Pollo Carmesí
-          </Text>
+        </Text>
         <Text style={styles.brandSlogan}>
           El sabor que te apasiona
-          </Text>
+        </Text>
       </View>
 
       <View style={styles.formSection}>
+        {/* Email/Username Input */}
         <View style={styles.inputContainer}>
           <MaterialIcons name="email" size={20} color="#8D6E63" style={styles.inputIcon} />
           <TextInput
-            placeholder="Correo Electrónico"
+            placeholder="Usuario o Correo Electrónico"
             placeholderTextColor="#A18F8C"
             style={styles.input}
             value={email}
@@ -56,52 +61,46 @@ export default function LoginScreen() {
           />
         </View>
 
+        {/* Password Input with Toggle */}
         <View style={styles.inputContainer}>
           <MaterialIcons name="lock" size={20} color="#8D6E63" style={styles.inputIcon} />
           <TextInput
             placeholder="Contraseña"
             placeholderTextColor="#A18F8C"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             style={styles.input}
             value={password}
             onChangeText={setPassword}
+            autoCapitalize="none"
           />
+          <TouchableOpacity 
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialIcons 
+              name={showPassword ? "visibility" : "visibility-off"} 
+              size={22} 
+              color="#8D6E63" 
+            />
+          </TouchableOpacity>
         </View>
 
+        {/* Single Login Button */}
         <View style={styles.buttonsContainer}>
-          {/* Botón para Cliente */}
           <TouchableOpacity
-            style={[styles.loginButton, styles.clientButton]}
-            onPress={() => handleLogin('client')}
-            disabled={loadingRole !== null}
+            style={styles.submitButton}
+            onPress={handleLogin}
+            disabled={loading}
             activeOpacity={0.8}
           >
-            {loadingRole === 'client' ? (
+            {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <MaterialIcons name="shopping-bag" size={20} color="#fff" />
+                <MaterialIcons name="login" size={20} color="#fff" />
                 <Text style={styles.buttonText}>
-                  Ingresar Cliente
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Botón para Repartidor */}
-          <TouchableOpacity
-            style={[styles.loginButton, styles.driverButton]}
-            onPress={() => handleLogin('driver')}
-            disabled={loadingRole !== null}
-            activeOpacity={0.8}
-          >
-            {loadingRole === 'driver' ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <MaterialIcons name="delivery-dining" size={22} color="#fff" />
-                <Text style={styles.buttonText}>
-                  Ingresar Repartidor
+                  Iniciar Sesión
                 </Text>
               </>
             )}
@@ -179,13 +178,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#3E2723',
   },
+  eyeIcon: {
+    padding: 4,
+  },
   buttonsContainer: {
-    gap: 12,
     marginTop: 10,
   },
-  loginButton: {
+  submitButton: {
     height: 52,
     borderRadius: 26,
+    backgroundColor: '#B22222',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -195,12 +197,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-  },
-  clientButton: {
-    backgroundColor: '#B22222',
-  },
-  driverButton: {
-    backgroundColor: '#8D6E63',
   },
   buttonText: {
     color: '#fff',
@@ -223,3 +219,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
