@@ -15,7 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     // Si hay token pero no está logueado (token expirado), limpiar
     if (!!token && !auth.isLoggedIn()) {
         auth.logout();
-        router.navigate(['/login']);
+        router.navigate(['/auth/login']);
     }
 
     const authReq = shouldAttachToken
@@ -31,7 +31,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             if (err instanceof HttpErrorResponse && err.status === 401) {
                 // Si es 401, limpiar token y redirigir al login
                 auth.logout();
-                router.navigate(['/login']);
+                router.navigate(['/auth/login']);
             }
             return throwError(() => err);
         })

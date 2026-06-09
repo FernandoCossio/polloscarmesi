@@ -21,7 +21,7 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle().pipe(
         tap({
           next: () => {
-            this.auditService.logAuditEvent({
+            this.safeLog({
               timestamp: new Date(),
               userId: req.user?.userId,
               role: req.user?.role,
@@ -33,7 +33,7 @@ export class AuditInterceptor implements NestInterceptor {
             });
           },
           error: (error) => {
-            this.auditService.logAuditEvent({
+            this.safeLog({
               timestamp: new Date(),
               userId: req.user?.userId,
               role: req.user?.role,
@@ -61,7 +61,7 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle().pipe(
         tap({
           next: () => {
-            this.auditService.logAuditEvent({
+            this.safeLog({
               timestamp: new Date(),
               userId: user?.userId,
               role: user?.role,
@@ -73,7 +73,7 @@ export class AuditInterceptor implements NestInterceptor {
             });
           },
           error: (error) => {
-            this.auditService.logAuditEvent({
+            this.safeLog({
               timestamp: new Date(),
               userId: user?.userId,
               role: user?.role,
@@ -90,4 +90,14 @@ export class AuditInterceptor implements NestInterceptor {
 
     return next.handle();
   }
+
+  private safeLog(event: AuditEvent) {
+    try {
+      void this.auditService.logAuditEvent(event).catch(() => undefined);
+    } catch {
+      return;
+    }
+  }
 }
+
+type AuditEvent = Parameters<AuditService['logAuditEvent']>[0];

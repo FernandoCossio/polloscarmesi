@@ -1,0 +1,92 @@
+<p-dialog 
+    [header]="'Actualizar Imagen: ' + (producto?.nombre || '')" 
+    [(visible)]="visible" 
+    [modal]="true" 
+    [closable]="true"
+    [style]="{ width: '420px' }"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="close()">
+    
+    <div class="flex flex-col gap-4 mt-2">
+        <!-- Drag & Drop Zone / Preview Container -->
+        <div 
+            class="upload-zone"
+            [class.drag-over]="dragOver"
+            [class.has-preview]="previewUrl"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()">
+            
+            <input 
+                #fileInput 
+                type="file" 
+                accept="image/*" 
+                class="hidden" 
+                (change)="onFileSelected($event)"
+            />
+
+            @if (previewUrl) {
+                <div class="preview-container relative w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+                    <img [src]="previewUrl" alt="Vista previa" class="w-full h-full object-cover" />
+                    <!-- Action Overlay to change image -->
+                    <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex flex-col items-center justify-center transition-opacity duration-200 text-white gap-2">
+                        <i class="pi pi-refresh text-2xl"></i>
+                        <span class="text-xs font-semibold">Cambiar imagen</span>
+                    </div>
+                </div>
+            } @else {
+                <div class="flex flex-col items-center justify-center gap-3 py-8 text-surface-500 dark:text-surface-400">
+                    <div class="upload-icon-wrapper flex items-center justify-center w-14 h-14 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-500">
+                        <i class="pi pi-cloud-upload text-2xl"></i>
+                    </div>
+                    <div class="text-center px-4">
+                        <p class="font-semibold text-surface-900 dark:text-surface-100 m-0">Arrastra tu imagen aquí</p>
+                        <p class="text-xs mt-1 m-0">o haz clic para explorar tus archivos</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (selectedFile) {
+            <div class="file-info flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-950 rounded-xl border border-surface-200 dark:border-surface-800">
+                <div class="flex items-center gap-2 min-w-0">
+                    <i class="pi pi-image text-primary-500 shrink-0"></i>
+                    <span class="text-sm font-medium truncate text-surface-800 dark:text-surface-200">
+                        {{ selectedFile.name }}
+                    </span>
+                </div>
+                <button 
+                    pButton 
+                    type="button" 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-rounded p-button-danger p-button-sm shrink-0" 
+                    (click)="$event.stopPropagation(); reset()"
+                    title="Eliminar selección">
+                </button>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-2 mt-2">
+            <button 
+                pButton 
+                type="button" 
+                label="Cancelar" 
+                class="p-button-text p-button-secondary" 
+                [disabled]="loading"
+                (click)="close()">
+            </button>
+            <button 
+                pButton 
+                type="button" 
+                label="Subir Imagen" 
+                [icon]="loading ? 'pi pi-spinner pi-spin' : 'pi pi-check'"
+                [disabled]="!selectedFile || loading" 
+                class="p-button-primary"
+                (click)="upload()">
+            </button>
+        </div>
+    </div>
+</p-dialog>
