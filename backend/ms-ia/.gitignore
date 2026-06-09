@@ -3,3 +3,7 @@ match.json
 vacantes.json
 vacante.json
 match_and_cache.json
+# Entorno virtual y archivos temporales de Python
+.venv/
+__pycache__/
+*.py[cod]
