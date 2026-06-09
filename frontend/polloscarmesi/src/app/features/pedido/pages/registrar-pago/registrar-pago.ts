@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { switchMap, of } from 'rxjs';
+import { catchError, finalize, of, switchMap } from 'rxjs';
 import { HeaderPago } from '../../components/header-pago/header-pago';
 import { SeccionPago } from '../../components/seccion-pago/seccion-pago';
 import { SeccionComprobante } from '../../components/seccion-comprobante/seccion-comprobante';
@@ -40,6 +40,7 @@ export class RegistrarPago implements OnInit {
   montoRecibido: number = 0;
   comprobanteFile: File | null = null;
   isValidPayment: boolean = false;
+  submitting: boolean = false;
 
   ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
@@ -80,6 +81,9 @@ export class RegistrarPago implements OnInit {
 
   onMetodoChange(metodo: MetodoPago): void {
     this.metodo = metodo;
+    if (metodo !== 'QR') {
+      this.comprobanteFile = null;
+    }
   }
 
   onMontoRecibidoChange(monto: number): void {
@@ -106,7 +110,7 @@ export class RegistrarPago implements OnInit {
 
   registrarPago(): void {
     const ped = this.pedido();
-    if (!ped || !this.isValidPayment) return;
+    if (!ped || !this.isValidPayment || this.submitting) return;
 
     const input = {
       pedidoId: ped.id,
@@ -114,19 +118,31 @@ export class RegistrarPago implements OnInit {
       montoRecibido: this.montoRecibido
     };
 
+    let comprobanteSubido = true;
+    this.submitting = true;
     this.pedidoService.registrarPago(input).pipe(
       switchMap((pago) => {
-        if (this.comprobanteFile) {
-          return this.pedidoService.subirComprobantePago(pago.id, this.comprobanteFile);
+        if (this.metodo === 'QR' && this.comprobanteFile) {
+          return this.pedidoService.subirComprobantePago(pago.id, this.comprobanteFile).pipe(
+            catchError(() => {
+              comprobanteSubido = false;
+              return of(pago);
+            })
+          );
         }
         return of(pago);
+      }),
+      finalize(() => {
+        this.submitting = false;
       })
     ).subscribe({
       next: () => {
         this.messageService.add({
-          severity: 'success',
-          summary: 'Pago Registrado',
-          detail: 'El pago ha sido registrado exitosamente.',
+          severity: comprobanteSubido ? 'success' : 'warn',
+          summary: comprobanteSubido ? 'Pago Registrado' : 'Pago Registrado (sin comprobante)',
+          detail: comprobanteSubido
+            ? 'El pago ha sido registrado exitosamente.'
+            : 'El pago se registró, pero no se pudo subir el comprobante.',
           life: 3000
         });
         setTimeout(() => {

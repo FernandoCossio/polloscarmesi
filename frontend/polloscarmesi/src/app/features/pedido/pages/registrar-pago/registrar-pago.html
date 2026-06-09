@@ -33,9 +33,11 @@
     ></app-seccion-pago>
 
     <!-- Componente de Carga de Comprobante -->
-    <app-seccion-comprobante 
-      (fileSelect)="onFileSelect($event)"
-    ></app-seccion-comprobante>
+    @if (metodo === 'QR') {
+      <app-seccion-comprobante 
+        (fileSelect)="onFileSelect($event)"
+      ></app-seccion-comprobante>
+    }
 
     <!-- Pie de Página: Botones de Acción -->
     <div class="action-footer">
@@ -49,7 +51,8 @@
       <button 
         pButton 
         label="Registrar Pago" 
-        [disabled]="!isValidPayment"
+        [loading]="submitting"
+        [disabled]="!isValidPayment || submitting"
         (click)="registrarPago()"
         class="submit-btn"
       ></button>
