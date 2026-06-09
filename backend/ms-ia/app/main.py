@@ -10,7 +10,12 @@ from app.services.segmentacion_clientes_service import (
     init_segmentacion_clientes_service,
 )
 logger = get_logger("Main")
-
+from app.api.routes.comprobantes import (
+    router as comprobantes_router,
+)
+from app.services.comprobantes_service import (
+    init_comprobantes_service,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,7 +23,8 @@ async def lifespan(app: FastAPI):
 
     init_tiempo_pedidos_service()
     init_segmentacion_clientes_service()
-    
+    init_comprobantes_service()
+
     logger.info("GraphQL disponible en /graphql")
 
     try:
@@ -52,6 +58,10 @@ app.add_middleware(
 
 app.include_router(graphql_router, prefix="/graphql")
 
+app.include_router(
+    comprobantes_router,
+    prefix="/api",
+)
 
 @app.get("/health", tags=["health"])
 async def health_check():

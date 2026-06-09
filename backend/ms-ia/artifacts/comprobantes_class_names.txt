@@ -1,0 +1,6 @@
+banco_ganadero
+bnb
+imagen_borrosa
+no_es_comprobante
+revision_manual
+yape
