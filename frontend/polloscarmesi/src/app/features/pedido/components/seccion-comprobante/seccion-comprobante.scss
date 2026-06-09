@@ -1,0 +1,118 @@
+.seccion-comprobante-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-family: var(--p-font-family, inherit);
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--p-surface-600);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.drop-zone {
+  border: 2px dashed var(--p-surface-300);
+  border-radius: var(--p-border-radius-xl);
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--p-surface-0);
+  transition: all 0.2s ease;
+  min-height: 140px;
+
+  &:hover {
+    border-color: var(--p-primary-color);
+    background: var(--p-surface-50);
+  }
+
+  &.drag-over {
+    border-color: var(--p-primary-color);
+    background: var(--p-primary-50);
+  }
+
+  &.has-file {
+    border-style: solid;
+    border-color: var(--p-surface-200);
+    padding: 1.25rem;
+    min-height: auto;
+  }
+}
+
+.hidden-input {
+  display: none;
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+
+  .upload-icon {
+    font-size: 2.25rem;
+    color: var(--p-surface-400);
+  }
+
+  .instruction-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--p-surface-800);
+  }
+
+  .support-text {
+    font-size: 0.75rem;
+    color: var(--p-surface-500);
+  }
+}
+
+.selected-file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+
+  .file-icon {
+    font-size: 2rem;
+    color: var(--p-primary-color);
+  }
+
+  .file-details {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+
+    .file-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--p-surface-800);
+      word-break: break-all;
+    }
+
+    .file-size {
+      font-size: 0.75rem;
+      color: var(--p-surface-500);
+    }
+  }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--p-surface-400);
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--p-surface-100);
+      color: var(--p-danger);
+    }
+  }
+}

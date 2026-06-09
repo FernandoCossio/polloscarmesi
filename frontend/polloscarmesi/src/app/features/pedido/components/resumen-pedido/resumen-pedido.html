@@ -1,0 +1,80 @@
+<div class="resumen-container">
+  <h2>Resumen del Pedido</h2>
+  <div class="divider"></div>
+
+  <!-- Lista de Productos en el Carrito -->
+  <div class="cart-items">
+    @for (item of items; track item.producto.id) {
+      <div class="cart-item">
+        <div class="item-details">
+          <span class="item-name">{{ item.producto.nombre }}</span>
+          <span class="item-unit-price">Bs. {{ item.producto.precio | number:'1.2-2' }} c/u</span>
+        </div>
+
+        <div class="item-quantity-control">
+          <button 
+            pButton 
+            icon="pi pi-minus" 
+            class="p-button-text p-button-secondary qty-btn" 
+            (click)="onDecrease(item.producto)"
+          ></button>
+          <span class="qty-label">{{ item.cantidad }}</span>
+          <button 
+            pButton 
+            icon="pi pi-plus" 
+            class="p-button-text p-button-secondary qty-btn" 
+            (click)="onIncrease(item.producto)"
+          ></button>
+        </div>
+
+        <div class="item-subtotal">
+          Bs. {{ (item.producto.precio * item.cantidad) | number:'1.2-2' }}
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-cart">
+        <i class="pi pi-shopping-cart text-4xl mb-2"></i>
+        <p>No hay productos en el pedido</p>
+      </div>
+    }
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Resumen de Costos -->
+  <div class="summary-costs">
+    <div class="cost-row">
+      <span class="label">Subtotal</span>
+      <span class="value">Bs. {{ subtotal | number:'1.2-2' }}</span>
+    </div>
+
+    <div class="cost-row align-center">
+      <span class="label">Descuento (Bs.)</span>
+      <p-inputNumber 
+        [ngModel]="descuento" 
+        (onInput)="onDescuentoChange($event)"
+        [min]="0" 
+        [max]="subtotal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        class="discount-input"
+        placeholder="0.00"
+      ></p-inputNumber>
+    </div>
+
+    <div class="cost-row total-row">
+      <span class="label-total">Total</span>
+      <span class="value-total">Bs. {{ total | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <!-- Botón de Acción -->
+  <button 
+    pButton 
+    icon="pi pi-check-circle" 
+    label="Confirmar Pedido" 
+    [disabled]="items.length === 0" 
+    (click)="onConfirm()"
+    class="confirm-btn w-full p-button-lg"
+  ></button>
+</div>

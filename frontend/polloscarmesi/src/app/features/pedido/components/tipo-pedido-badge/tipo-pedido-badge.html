@@ -1,0 +1,6 @@
+<span class="custom-badge-tipo" [class]="tipo.toLowerCase()">
+  @if (mostrarIcono && iconClass) {
+    <i [class]="iconClass" class="badge-icon"></i>
+  }
+  <span class="badge-text">{{ label }}</span>
+</span>

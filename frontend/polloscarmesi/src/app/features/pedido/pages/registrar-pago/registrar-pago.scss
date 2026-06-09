@@ -1,0 +1,110 @@
+.registrar-pago-card {
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-200);
+  border-radius: var(--p-border-radius-xl);
+  padding: 1.5rem;
+  gap: 1.5rem;
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  color: var(--p-surface-400);
+  gap: 1rem;
+}
+
+.pedido-summary-box {
+  background: var(--p-primary-50);
+  border: 1px solid var(--p-primary-100);
+  border-radius: var(--p-border-radius-xl);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--p-font-family, inherit);
+
+  .left-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .summary-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--p-primary-800);
+    }
+
+    .summary-subtitle {
+      font-size: 0.9rem;
+      color: var(--p-primary-600);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+
+  .right-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+
+    .label-pay {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--p-primary-600);
+      letter-spacing: 0.05em;
+    }
+
+    .value-pay {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--p-primary-700);
+    }
+  }
+}
+
+.action-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--p-surface-200);
+  margin-top: auto;
+
+  .cancel-btn {
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .submit-btn {
+    background: var(--p-primary-color);
+    border-color: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: var(--p-border-radius-lg);
+    padding: 0.75rem 2rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--p-primary-hover-color) !important;
+      border-color: var(--p-primary-hover-color) !important;
+    }
+
+    &:disabled {
+      background: var(--p-surface-200) !important;
+      border-color: var(--p-surface-200) !important;
+      color: var(--p-surface-400) !important;
+    }
+  }
+}

@@ -29,6 +29,28 @@ public class LocalStorageServiceImpl implements ImageStorageService {
     }
 
     @Override
+    public String store(MultipartFile file, String customKey) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("No se puede guardar un archivo vacío");
+        }
+
+        Path targetPath = Paths.get(uploadDir).resolve(customKey);
+        Files.createDirectories(targetPath.getParent());
+        Files.copy(file.getInputStream(), targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        logger.info("Archivo guardado localmente con key personalizada: {}", targetPath);
+        return customKey;
+    }
+
+    @Override
+    public String generatePresignedUrl(String s3Key) {
+        if (s3Key == null || s3Key.isBlank()) {
+            return null;
+        }
+        return "/api/storage/" + s3Key;
+    }
+
+    @Override
     public String store(MultipartFile file, StorageOptions options) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("No se puede guardar un archivo vacío");
