@@ -46,3 +46,5 @@ app-example
 .claude/
 CLAUDE.md
 AGENTS.md
+
+.env
