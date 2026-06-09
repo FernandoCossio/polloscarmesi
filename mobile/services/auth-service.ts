@@ -39,7 +39,17 @@ export function decodeJwt(token: string): any {
   }
 }
 
+let authToken: string | null = null;
+
 export const AuthService = {
+  setToken(token: string | null) {
+    authToken = token;
+  },
+
+  getToken(): string | null {
+    return authToken;
+  },
+
   async login(username: string, password: string): Promise<TokenResponse> {
     const response = await fetch(`${GATEWAY_URL}/auth/login`, {
       method: 'POST',
@@ -55,6 +65,9 @@ export const AuthService = {
       throw new Error(json.message || 'Error al iniciar sesión');
     }
     const apiResponse = json as ApiResponse<TokenResponse>;
+    
+    this.setToken(apiResponse.data.accessToken);
+    
     return apiResponse.data;
   }
 };
