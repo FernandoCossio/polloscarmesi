@@ -86,6 +86,11 @@ public enum ErrorCode {
     ACCESO_DENEGADO("SEC501", HttpStatus.FORBIDDEN, "Acceso denegado"),
 
     // -------------------------------------------------------------------------
+    // CFG — Configuración
+    // -------------------------------------------------------------------------
+    CONFIGURACION_NO_ENCONTRADA("CFG101", HttpStatus.NOT_FOUND, "Configuración no encontrada"),
+
+    // -------------------------------------------------------------------------
     // SYS — Sistema
     // -------------------------------------------------------------------------
     ERROR_INTERNO("SYS901", HttpStatus.INTERNAL_SERVER_ERROR, "Ha ocurrido un error inesperado.");

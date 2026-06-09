@@ -21,9 +21,15 @@ type Query {
 
   # Cocina
   obtenerColaCocina: [Pedido!]!
+
+  # Configuración
+  obtenerConfiguracion: ConfiguracionResponse!
 }
 
 type Mutation {
+  # Configuración
+  actualizarConfiguracion(input: ConfiguracionInput!): ConfiguracionResponse!
+
   # Categorías
   crearCategoria(input: CategoriaInput!): Categoria!
   actualizarCategoria(id: ID!, input: CategoriaInput!): Categoria!
@@ -158,6 +164,26 @@ type Pago {
   comprobanteUrl: String
   txHash: String
   fechaCreacion: String!
+}
+
+input ConfiguracionInput {
+  nombreRestaurante: String!
+  ruc: String!
+  direccion: String!
+  telefono: String!
+  horarioAtencion: String!
+  tiempoMaximoPreparacion: Int!
+  umbralAlertaCocina: Int!
+}
+
+type ConfiguracionResponse {
+  nombreRestaurante: String!
+  ruc: String!
+  direccion: String!
+  telefono: String!
+  horarioAtencion: String!
+  tiempoMaximoPreparacion: Int!
+  umbralAlertaCocina: Int!
 }
 
 
