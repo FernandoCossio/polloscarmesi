@@ -1,0 +1,41 @@
+<div class="card-pedido-container">
+  <!-- Barra Superior del Pedido -->
+  <div class="card-header-bar" [class]="pedido.tipo.toLowerCase()">
+    <span class="ficha-label">
+      @if (elapsedMinutes < 5 && pedido.tipo === 'PRESENCIAL') {
+        <span class="alert-icon">!</span>
+      }
+      {{ pedido.numeroFicha }} — {{ pedido.tipo === 'PRESENCIAL' ? 'Presencial' : 'Delivery' }}
+    </span>
+    <span class="time-badge" [class.delayed]="elapsedMinutes >= 15">
+      {{ elapsedTime }}
+    </span>
+  </div>
+
+  <!-- Contenido: Lista de Productos -->
+  <div class="card-body">
+    <div class="items-list">
+      @for (item of displayedItems; track item.id) {
+        <div class="item-row">
+          <span class="item-qty">x{{ item.cantidad }}</span>
+          <span class="item-name">{{ item.producto.nombre }}</span>
+        </div>
+      }
+    </div>
+
+    @if (remainingItemsCount > 0) {
+      <div class="more-items-pill">
+        + {{ remainingItemsCount }} {{ remainingItemsCount === 1 ? 'item' : 'items' }} más
+      </div>
+    }
+  </div>
+
+  <!-- Botón Listo -->
+  <button 
+    pButton 
+    icon="pi pi-check-circle" 
+    label="Listo" 
+    (click)="onListoClick()"
+    class="listo-btn w-full"
+  ></button>
+</div>
