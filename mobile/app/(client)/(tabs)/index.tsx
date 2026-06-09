@@ -1,87 +1,57 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useCart } from '../../../context/cart-context';
 import { ThemedView } from '@/components/themed-view';
-
-const CATEGORIAS = [
-  { id: '1', nombre: 'Combos', icon: 'local_fire_department' },
-  { id: '2', nombre: 'Pollos', icon: 'restaurant' },
-  { id: '3', nombre: 'Acompañamientos', icon: 'lunch_dining' },
-  { id: '4', nombre: 'Bebidas', icon: 'local_cafe' },
-];
-
-const PRODUCTOS = [
-  {
-    id: 'p1',
-    nombre: 'Combo Familiar Carmesí',
-    descripcion: '1 Pollo Entero a la Brasa + Porción de Papas Fritas Grandes + Ensalada + Gaseosa 2L.',
-    precio: 110,
-    categoriaId: '1',
-    imagen: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=400&q=80',
-  },
-  {
-    id: 'p2',
-    nombre: 'Combo Personal',
-    descripcion: '1/4 de Pollo a la Brasa + Porción de Papas Fritas Medianas + Gaseosa Personal.',
-    precio: 35,
-    categoriaId: '1',
-    imagen: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&q=80',
-  },
-  {
-    id: 'p3',
-    nombre: 'Pollo Entero Carmesí',
-    descripcion: 'Pollo entero sazonado a las brasas con nuestra receta secreta y condimentos especiales.',
-    precio: 70,
-    categoriaId: '2',
-    imagen: 'https://images.unsplash.com/photo-1598103442097-8b743e4b35c6?w=400&q=80',
-  },
-  {
-    id: 'p4',
-    nombre: 'Medio Pollo Carmesí',
-    descripcion: 'Medio pollo dorado al carbón, tierno y jugoso.',
-    precio: 40,
-    categoriaId: '2',
-    imagen: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400&q=80',
-  },
-  {
-    id: 'p5',
-    nombre: 'Papas Fritas Grandes',
-    descripcion: 'Papas fritas cortadas a mano de la casa, súper crujientes.',
-    precio: 15,
-    categoriaId: '3',
-    imagen: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&q=80',
-  },
-  {
-    id: 'p6',
-    nombre: 'Arroz con Queso',
-    descripcion: 'Arroz cremoso tradicional con abundante queso fundido.',
-    precio: 20,
-    categoriaId: '3',
-    imagen: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80',
-  },
-  {
-    id: 'p7',
-    nombre: 'Coca-Cola 2 Litros',
-    descripcion: 'Gaseosa refrescante tamaño familiar.',
-    precio: 15,
-    categoriaId: '4',
-    imagen: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80',
-  },
-  {
-    id: 'p8',
-    nombre: 'Chicha Morada de la Casa',
-    descripcion: 'Jarra de chicha tradicional hervida con piña, manzana y canela.',
-    precio: 18,
-    categoriaId: '4',
-    imagen: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400&q=80',
-  },
-];
+import { RestaurantService, Categoria } from '../../../services/restaurant-service';
 
 export default function MenuScreen() {
-  const [activeCategoria, setActiveCategoria] = useState('1');
+  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [activeCategoria, setActiveCategoria] = useState<string | null>(null);
+  const [loadingCats, setLoadingCats] = useState(true);
+  const [loadingProds, setLoadingProds] = useState(false);
   const { addToCart } = useCart();
 
-  const handleAdd = (item: typeof PRODUCTOS[0]) => {
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCats(true);
+        const data = await RestaurantService.obtenerCategorias();
+        const allCategory: Categoria = { id: 'all', nombre: 'Todos' };
+        setCategories([allCategory, ...data]);
+        setActiveCategoria('all');
+      } catch (error) {
+        console.error('Error al cargar categorías:', error);
+      } finally {
+        setLoadingCats(false);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    if (!activeCategoria) return;
+
+    const loadProducts = async () => {
+      try {
+        setLoadingProds(true);
+        const catId = activeCategoria === 'all' ? undefined : activeCategoria;
+        const data = await RestaurantService.obtenerMenu(catId);
+        const mapped = data.map((p) => ({
+          ...p,
+          imagen: p.imagenUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
+        }));
+        setProducts(mapped);
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+      } finally {
+        setLoadingProds(false);
+      }
+    };
+    loadProducts();
+  }, [activeCategoria]);
+
+  const handleAdd = (item: any) => {
     addToCart(
       {
         id: item.id,
@@ -93,18 +63,24 @@ export default function MenuScreen() {
     );
   };
 
-  const filteredProducts = PRODUCTOS.filter((p) => p.categoriaId === activeCategoria);
+  if (loadingCats) {
+    return (
+      <ThemedView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#B22222" />
+        <Text style={styles.loadingText}>Cargando categorías...</Text>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
-      {/* Selector de Categorías Horizontal */}
       <View style={styles.categoriesWrapper}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
         >
-          {CATEGORIAS.map((cat) => {
+          {categories.map((cat) => {
             const isActive = cat.id === activeCategoria;
             return (
               <TouchableOpacity
@@ -122,34 +98,49 @@ export default function MenuScreen() {
         </ScrollView>
       </View>
 
-      {/* Lista de Productos */}
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <Image source={{ uri: item.imagen }} style={styles.productImage} />
-            <View style={styles.productDetails}>
-              <Text style={styles.productName}>{item.nombre}</Text>
-              <Text style={styles.productDesc} numberOfLines={2}>
-                {item.descripcion}
-              </Text>
-              <View style={styles.productFooter}>
-                <Text style={styles.productPrice}>{item.precio} Bs.</Text>
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={() => handleAdd(item)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.addButtonText}>Agregar</Text>
-                </TouchableOpacity>
+      {loadingProds ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#B22222" />
+          <Text style={styles.loadingText}>Cargando productos...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>No hay productos en esta categoría</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.productCard}>
+              <Image 
+                source={{ uri: item.imagen }} 
+                style={styles.productImage} 
+                resizeMode="cover"
+              />
+              <View style={styles.productDetails}>
+                <Text style={styles.productName}>{item.nombre}</Text>
+                <Text style={styles.productDesc} numberOfLines={2}>
+                  {item.descripcion}
+                </Text>
+                <View style={styles.productFooter}>
+                  <Text style={styles.productPrice}>{item.precio} Bs.</Text>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAdd(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.addButtonText}>Agregar</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        )}
-      />
+          )}
+        />
+      )}
     </ThemedView>
   );
 }
@@ -208,7 +199,8 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: 110,
-    height: 110,
+    height: '100%',
+    minHeight: 110,
   },
   productDetails: {
     flex: 1,
@@ -246,5 +238,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#FAF9F6',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#8D6E63',
+    fontWeight: '500',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#9E9E9E',
+    textAlign: 'center',
   },
 });
