@@ -129,7 +129,14 @@ public class ProductoService {
             }
         }
 
-        String savedPath = imageStorageService.store(file, new StorageOptions("productos"));
+        String originalFilename = file.getOriginalFilename();
+        String extension = "jpg";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        }
+        String customKey = "menu/productos/" + id + "." + extension;
+
+        String savedPath = imageStorageService.store(file, customKey);
         producto.setImagenUrl(savedPath);
 
         Producto updated = productoRepository.save(producto);

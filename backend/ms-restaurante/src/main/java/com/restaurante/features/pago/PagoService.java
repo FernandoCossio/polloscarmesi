@@ -119,8 +119,21 @@ public class PagoService {
             }
         }
 
-        String savedPath = imageStorageService.store(file, new StorageOptions("pagos"));
+        String originalFilename = file.getOriginalFilename();
+        String extension = "jpg";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        }
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        String datePath = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String timestamp = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String customKey = String.format("comprobantes/%s/%d-%s.%s", datePath, id, timestamp, extension);
+
+        String savedPath = imageStorageService.store(file, customKey);
         pago.setComprobanteUrl(savedPath);
+        pago.setComprobanteS3Key(customKey);
+        pago.setFechaSubida(now);
 
         Pago updated = pagoRepository.save(pago);
 
@@ -139,6 +152,16 @@ public class PagoService {
         if (pago.getCreatedAt() != null) {
             fechaCreacion = pago.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
+
+        String comprobanteUrl = pago.getComprobanteUrl();
+        if (pago.getComprobanteS3Key() != null && !pago.getComprobanteS3Key().isBlank()) {
+            try {
+                comprobanteUrl = imageStorageService.generatePresignedUrl(pago.getComprobanteS3Key());
+            } catch (Exception e) {
+                log.warn("No se pudo generar la URL firmada para el pago ID {}: {}", pago.getId(), e.getMessage());
+            }
+        }
+
         return new PagoResponse(
                 pago.getId(),
                 pago.getPedido().getId(),
@@ -147,7 +170,7 @@ public class PagoService {
                 pago.getMontoRecibido(),
                 pago.getMontoTotal(),
                 pago.getCambio(),
-                pago.getComprobanteUrl(),
+                comprobanteUrl,
                 pago.getTxHash(),
                 fechaCreacion
         );

@@ -83,7 +83,13 @@ public class PedidoService {
     @Transactional
     public PedidoResponse create(PedidoRequest request) {
         Pedido pedido = new Pedido();
-        pedido.setNumeroFicha(request.getNumeroFicha());
+        
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
+        long count = pedidoRepository.findAllByCreatedAtBetween(start, end).size();
+        String numeroFicha = String.format("F-%03d", count + 1);
+        pedido.setNumeroFicha(numeroFicha);
+
         pedido.setTipo(request.getTipo());
         pedido.setEstado(EstadoPedido.PENDIENTE);
         pedido.setClienteId(request.getClienteId());
