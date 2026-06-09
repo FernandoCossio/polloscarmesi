@@ -1,0 +1,61 @@
+<div class="card registrar-pago-card">
+  @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner text-5xl"></i>
+      <p>Cargando detalles del pedido...</p>
+    </div>
+  } @else {
+    <!-- Header -->
+    <app-header-pago [numeroFicha]="pedido()?.numeroFicha || ''"></app-header-pago>
+
+    <!-- Info del Pedido a Pagar -->
+    @if (pedido()) {
+      <div class="pedido-summary-box">
+        <div class="left-info">
+          <span class="summary-title">Pedido #{{ pedido()?.numeroFicha }}</span>
+          <span class="summary-subtitle">
+            <i class="pi pi-shopping-bag"></i> {{ totalItemsCount }} productos
+          </span>
+        </div>
+        <div class="right-info">
+          <span class="label-pay">TOTAL A PAGAR</span>
+          <span class="value-pay">Bs. {{ pedido()?.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Componente de Selección de Pago -->
+    <app-seccion-pago 
+      [total]="pedido()?.total || 0"
+      (metodoChange)="onMetodoChange($event)"
+      (montoRecibidoChange)="onMontoRecibidoChange($event)"
+      (isValidChange)="onIsValidChange($event)"
+    ></app-seccion-pago>
+
+    <!-- Componente de Carga de Comprobante -->
+    <app-seccion-comprobante 
+      (fileSelect)="onFileSelect($event)"
+    ></app-seccion-comprobante>
+
+    <!-- Pie de Página: Botones de Acción -->
+    <div class="action-footer">
+      <button 
+        pButton 
+        label="Cancelar" 
+        (click)="cancelar()"
+        class="cancel-btn p-button-text p-button-secondary"
+      ></button>
+
+      <button 
+        pButton 
+        label="Registrar Pago" 
+        [disabled]="!isValidPayment"
+        (click)="registrarPago()"
+        class="submit-btn"
+      ></button>
+    </div>
+  }
+</div>
+
+<!-- Soporte para notificaciones visuales -->
+<p-toast></p-toast>

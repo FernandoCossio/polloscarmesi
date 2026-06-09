@@ -10,7 +10,7 @@ export const appRoutes: Routes = [
         path: '',
         component: AppLayout,
         children: [
-            { path: '', component: Dashboard, canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)] },
+            { path: '', component: Dashboard, canActivate: [authGuard] },
             { 
                 path: 'categorias', 
                 loadComponent: () => import('./app/features/categoria/pages/list/list').then(m => m.List),
@@ -20,6 +20,21 @@ export const appRoutes: Routes = [
                 path: 'productos',
                 loadComponent: () => import('./app/features/producto/pages/list/list').then(m => m.List),
                 canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'registrar-pedido',
+                loadComponent: () => import('./app/features/pedido/pages/registra-pedidio/registra-pedidio').then(m => m.RegistraPedidio),
+                canActivate: [authGuard, roleGuard(ROLES.CAJERO)]
+            },
+            {
+                path: 'registrar-pago',
+                loadComponent: () => import('./app/features/pedido/pages/registrar-pago/registrar-pago').then(m => m.RegistrarPago),
+                canActivate: [authGuard, roleGuard(ROLES.CAJERO)]
+            },
+            {
+                path: 'historial-pedidos',
+                loadComponent: () => import('./app/features/pedido/pages/historial-pedidos/historial-pedidos').then(m => m.HistorialPedidos),
+                canActivate: [authGuard, roleGuard(ROLES.CAJERO)]
             }
         ]
     },

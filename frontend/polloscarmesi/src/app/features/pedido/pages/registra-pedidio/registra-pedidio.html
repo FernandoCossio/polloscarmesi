@@ -1,0 +1,33 @@
+<div class="card order-registration-card">
+  <!-- Encabezado de Pedido -->
+  <app-header-pedido></app-header-pedido>
+
+  <!-- Cuerpo de la Vista: Menú a la izquierda, Resumen a la derecha -->
+  <div class="order-content">
+    <div class="menu-section">
+      <app-pedido-menu
+        [productos]="filteredProductos()"
+        [categorias]="categorias()"
+        [selectedCategoriaId]="selectedCategoriaId()"
+        [searchQuery]="searchQuery()"
+        (selectCategoria)="onSelectCategoria($event)"
+        (searchChange)="onSearchChange($event)"
+        (addProducto)="onAddProducto($event)"
+      ></app-pedido-menu>
+    </div>
+
+    <div class="summary-section">
+      <app-resumen-pedido
+        [items]="cartItems()"
+        [descuento]="descuento()"
+        (increaseQuantity)="onIncreaseQuantity($event)"
+        (decreaseQuantity)="onDecreaseQuantity($event)"
+        (updateDescuento)="onUpdateDescuento($event)"
+        (confirmPedido)="onConfirmPedido()"
+      ></app-resumen-pedido>
+    </div>
+  </div>
+</div>
+
+<!-- Soporte para notificaciones visuales -->
+<p-toast></p-toast>

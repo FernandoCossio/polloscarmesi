@@ -1,0 +1,59 @@
+<div class="seccion-pago-container">
+  <!-- Selección de Método de Pago -->
+  <div class="field-label">MÉTODO DE PAGO</div>
+  <div class="payment-methods">
+    <button 
+      pButton 
+      [class.active]="selectedMetodo === 'EFECTIVO'" 
+      (click)="selectMetodo('EFECTIVO')"
+      class="method-btn"
+    >
+      <div class="btn-content">
+        <i class="pi pi-wallet"></i>
+        <span>Efectivo</span>
+      </div>
+    </button>
+
+    <button 
+      pButton 
+      [class.active]="selectedMetodo === 'QR'" 
+      (click)="selectMetodo('QR')"
+      class="method-btn"
+    >
+      <div class="btn-content">
+        <i class="pi pi-qrcode"></i>
+        <span>QR</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Formulario de Monto y Cambio -->
+  <div class="amounts-row">
+    <!-- Monto Recibido -->
+    <div class="amount-field">
+      <label for="montoRecibido">Monto Recibido (Bs.)</label>
+      <p-inputNumber 
+        id="montoRecibido"
+        [ngModel]="montoRecibido" 
+        (onInput)="onMontoInput($event)"
+        [disabled]="selectedMetodo === 'QR'"
+        [min]="0" 
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        class="amount-input"
+        placeholder="0.00"
+      ></p-inputNumber>
+    </div>
+
+    <!-- Cambio a entregar -->
+    <div class="amount-field">
+      <label>Cambio</label>
+      <div class="change-box" [class.valid]="isValid">
+        <span class="change-value">Bs. {{ cambio | number:'1.2-2' }}</span>
+        @if (isValid) {
+          <i class="pi pi-check-circle check-icon"></i>
+        }
+      </div>
+    </div>
+  </div>
+</div>

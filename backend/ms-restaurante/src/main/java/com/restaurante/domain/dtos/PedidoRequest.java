@@ -19,8 +19,6 @@ import java.util.List;
 @AllArgsConstructor
 public class PedidoRequest {
 
-    private String numeroFicha;
-
     @NotNull(message = "El tipo de pedido es obligatorio")
     private TipoPedido tipo;
 

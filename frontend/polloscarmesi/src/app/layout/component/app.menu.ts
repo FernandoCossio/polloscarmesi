@@ -47,6 +47,29 @@ export class AppMenu {
             ];
         }
 
+        if (roles.includes(ROLES.CAJERO)) {
+            return [
+                {
+                    label: 'Pedidos',
+                    items: [
+                        { label: 'Registrar Pedido', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/registrar-pedido'] },
+                        { label: 'Historial de Pedidos', icon: 'pi pi-fw pi-history', routerLink: ['/historial-pedidos'] }
+                    ]
+                }
+            ];
+        }
+
+        if (roles.includes(ROLES.COCINA)) {
+            return [
+                {
+                    label: 'Cocina',
+                    items: [
+                        
+                    ]
+                }
+            ];
+        }
+
         return [];
     }
 }

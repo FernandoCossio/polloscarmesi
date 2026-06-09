@@ -1,0 +1,40 @@
+<div class="seccion-comprobante-container">
+  <div class="field-label">Subir Comprobante (opcional)</div>
+
+  <div 
+    class="drop-zone"
+    [class.drag-over]="isDragging"
+    [class.has-file]="!!selectedFile"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    (click)="fileInput.click()"
+  >
+    <input 
+      #fileInput 
+      type="file" 
+      accept="image/*,application/pdf"
+      class="hidden-input" 
+      (change)="onFileChange($event)"
+    />
+
+    @if (!selectedFile) {
+      <div class="drop-zone-content">
+        <i class="pi pi-cloud-upload upload-icon"></i>
+        <span class="instruction-text">Haz clic para seleccionar o arrastra el archivo aquí</span>
+        <span class="support-text">Formatos soportados: JPG, PNG, PDF (Máx 5MB)</span>
+      </div>
+    } @else {
+      <div class="selected-file-info">
+        <i class="pi pi-file file-icon"></i>
+        <div class="file-details">
+          <span class="file-name">{{ selectedFile.name }}</span>
+          <span class="file-size">{{ (selectedFile.size / 1024) | number:'1.0-0' }} KB</span>
+        </div>
+        <button class="remove-btn" (click)="removeFile($event)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    }
+  </div>
+</div>

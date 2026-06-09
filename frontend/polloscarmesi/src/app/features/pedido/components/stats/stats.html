@@ -1,0 +1,34 @@
+<div class="stats-grid">
+  <!-- Tarjeta 1: Total Pedidos -->
+  <div class="stat-card total-pedidos">
+    <div class="icon-container">
+      <i class="pi pi-file"></i>
+    </div>
+    <div class="stat-info">
+      <span class="stat-label">TOTAL PEDIDOS</span>
+      <span class="stat-value">{{ totalPedidos }}</span>
+    </div>
+  </div>
+
+  <!-- Tarjeta 2: Ingresos del Turno -->
+  <div class="stat-card ingresos-turno">
+    <div class="icon-container">
+      <i class="pi pi-wallet"></i>
+    </div>
+    <div class="stat-info">
+      <span class="stat-label">INGRESOS DEL TURNO</span>
+      <span class="stat-value">Bs. {{ ingresosTurno | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <!-- Tarjeta 3: Pedidos Cancelados -->
+  <div class="stat-card pedidos-cancelados">
+    <div class="icon-container">
+      <i class="pi pi-times-circle"></i>
+    </div>
+    <div class="stat-info">
+      <span class="stat-label">PEDIDOS CANCELADOS</span>
+      <span class="stat-value">{{ pedidosCancelados }}</span>
+    </div>
+  </div>
+</div>

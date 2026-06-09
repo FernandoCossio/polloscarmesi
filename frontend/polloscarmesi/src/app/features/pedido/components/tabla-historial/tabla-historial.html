@@ -1,0 +1,76 @@
+<div class="tabla-historial-wrapper">
+  <p-table 
+    [value]="pedidos" 
+    [paginator]="true" 
+    [rows]="5" 
+    [rowsPerPageOptions]="[5, 10, 20]"
+    class="custom-table"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th># FICHA</th>
+        <th>TIPO</th>
+        <th>PRODUCTOS</th>
+        <th>TOTAL</th>
+        <th>ESTADO</th>
+        <th>HORA</th>
+        <th class="text-center">ACCIONES</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-pedido>
+      <tr>
+        <td class="font-semibold text-surface-900">{{ pedido.numeroFicha || '#' + pedido.id }}</td>
+        
+        <td>
+          <app-tipo-pedido-badge [tipo]="pedido.tipo"></app-tipo-pedido-badge>
+        </td>
+
+        <td>
+          {{ getProductCount(pedido) }} {{ getProductCount(pedido) === 1 ? 'item' : 'items' }}
+        </td>
+
+        <td class="total-col">Bs. {{ pedido.total | number:'1.2-2' }}</td>
+
+        <td>
+          <app-pedido-estado-badge [estado]="pedido.estado"></app-pedido-estado-badge>
+        </td>
+
+        <td>{{ getHoraCreacion(pedido.fechaCreacion) }}</td>
+
+        <td>
+          <div class="actions-cell">
+            <button 
+              pButton 
+              icon="pi pi-eye" 
+              class="p-button-rounded p-button-text p-button-secondary action-btn"
+              pTooltip="Ver detalles"
+              tooltipPosition="top"
+              (click)="onVer(pedido)"
+            ></button>
+
+            @if (canCancel(pedido)) {
+              <button 
+                pButton 
+                icon="pi pi-ban" 
+                class="p-button-rounded p-button-text p-button-danger action-btn"
+                pTooltip="Cancelar pedido"
+                tooltipPosition="top"
+                (click)="onCancelar(pedido)"
+              ></button>
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center py-6 text-surface-500">
+          <i class="pi pi-inbox text-4xl mb-3 text-surface-300"></i>
+          <p class="m-0 font-medium">No se registraron pedidos durante este turno.</p>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
