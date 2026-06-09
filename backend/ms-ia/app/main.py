@@ -17,10 +17,17 @@ from app.services.comprobantes_service import (
     init_comprobantes_service,
 )
 
+from app.core.security import (
+    validar_configuracion_jwt,
+)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Iniciando Microservicio de IA...")
 
+    validar_configuracion_jwt()
+    logger.info("Llave pública JWT cargada correctamente ✓")
+    
     init_tiempo_pedidos_service()
     init_segmentacion_clientes_service()
     init_comprobantes_service()

@@ -1,0 +1,6 @@
+# Llaves privadas JWT: nunca subir al repositorio
+**/private.pem
+
+# Certificados JWT locales: no subir al repositorio
+**/certs/*.pem
+**/certs/*.key

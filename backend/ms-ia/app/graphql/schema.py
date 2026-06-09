@@ -12,6 +12,12 @@ from app.services.tiempo_pedidos_service import (
     estimar_tiempo_pedido as predecir_tiempo_pedido,
 )
 
+from strawberry.types import Info
+
+from app.core.security import (
+    crear_contexto_graphql,
+    requerir_usuario_graphql,
+)
 
 @strawberry.enum
 class TipoPedido(Enum):
@@ -75,8 +81,11 @@ class Mutation:
     @strawberry.mutation(name="estimarTiempoPedido")
     def estimar_tiempo_pedido(
         self,
+        info: Info,
         input: TiempoPedidoInput,
     ) -> TiempoPedidoPayload:
+        requerir_usuario_graphql(info)
+
         if input.cantidad_items <= 0:
             raise ValueError(
                 "La cantidad de ítems debe ser mayor que cero."
@@ -116,8 +125,11 @@ class Mutation:
     @strawberry.mutation(name="segmentarCliente")
     def segmentar_cliente(
         self,
+        info: Info,
         input: SegmentacionClienteInput,
     ) -> SegmentacionClientePayload:
+        requerir_usuario_graphql(info)
+
         if input.cliente_id <= 0:
             raise ValueError(
                 "El ID del cliente debe ser mayor que cero."
@@ -157,4 +169,7 @@ schema = strawberry.Schema(
     mutation=Mutation,
 )
 
-graphql_router = GraphQLRouter(schema)
+graphql_router = GraphQLRouter(
+    schema,
+    context_getter=crear_contexto_graphql,
+)

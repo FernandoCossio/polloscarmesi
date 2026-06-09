@@ -13,6 +13,20 @@ from app.services.comprobantes_service import (
     analizar_comprobante,
 )
 
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
+
+from app.core.security import (
+    UsuarioAutenticado,
+    requerir_usuario_actual,
+)
+
 router = APIRouter(
     prefix="/comprobantes",
     tags=["comprobantes"],
@@ -38,6 +52,10 @@ async def analizar_comprobante_endpoint(
                 "Imagen JPG, JPEG o PNG del comprobante de pago."
             )
         ),
+    ],
+    _usuario: Annotated[
+        UsuarioAutenticado,
+        Depends(requerir_usuario_actual),
     ],
 ):
     if archivo.content_type not in TIPOS_IMAGEN_PERMITIDOS:
