@@ -170,6 +170,8 @@ export const RestaurantService = {
           clienteId
           direccionEntrega
           referencia
+          latitud
+          longitud
           subtotal
           total
           createdAt
@@ -177,6 +179,7 @@ export const RestaurantService = {
           repartidorAsignado {
             id
             nombre
+            coordenadasActuales
           }
           detalles {
             id
@@ -437,6 +440,38 @@ export const RestaurantService = {
       return json.data.actualizarEstadoDelivery;
     } catch (err) {
       console.error('Error updating delivery status:', err);
+      throw err;
+    }
+  },
+
+  async registrarPuntoClave(pedidoId: string, latitud: number, longitud: number, evento: string = 'EN_RUTA'): Promise<any> {
+    try {
+      const token = AuthService.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${GATEWAY_URL}/api/v1/delivery/tracking/punto-clave`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          pedidoId,
+          latitud,
+          longitud,
+          evento,
+        }),
+      });
+
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.message || 'Error al registrar telemetría GPS');
+      }
+      return json;
+    } catch (err) {
+      console.error('Error registering GPS telemetry:', err);
       throw err;
     }
   },
