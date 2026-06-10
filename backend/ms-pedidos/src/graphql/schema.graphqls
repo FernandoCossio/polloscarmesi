@@ -56,6 +56,7 @@ type Repartidor {
   nombre: String!
   disponible: Boolean!
   coordenadasActuales: String
+  telefono: String
 }
 
 type ResumenDelivery {
