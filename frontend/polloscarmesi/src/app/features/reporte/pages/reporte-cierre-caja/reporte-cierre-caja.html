@@ -1,0 +1,19 @@
+<div class="report-container-card">
+  <app-header-reporte-cierre></app-header-reporte-cierre>
+  
+  <app-filtros-reporte-cierre 
+    [loading]="loading()" 
+    (buscar)="onBuscar($event)" 
+    (exportExcel)="exportarExcel($event)" 
+    (exportPdf)="exportarPdf($event)">
+  </app-filtros-reporte-cierre>
+
+  <app-stats-reporte-cierre 
+    [data]="reportData()">
+  </app-stats-reporte-cierre>
+
+  <app-contenido-reporte-cierre 
+    [data]="reportData()" 
+    [cargado]="cargado()">
+  </app-contenido-reporte-cierre>
+</div>

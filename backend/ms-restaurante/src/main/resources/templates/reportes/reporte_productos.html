@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reporte de Rendimiento de Productos (Top Vendidos)</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2f855a;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: #2f855a;
+            margin: 0 0 5px 0;
+        }
+        .header p {
+            margin: 0;
+            color: #555;
+            font-size: 12px;
+        }
+        .meta-box {
+            background-color: #f0fff4;
+            border: 1px solid #c6f6d5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .meta-box table {
+            width: 100%;
+        }
+        .meta-box td {
+            padding: 3px 10px;
+            font-size: 11px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .report-table th {
+            background-color: #2f855a;
+            color: #fff;
+            text-align: left;
+            padding: 8px 10px;
+            font-weight: bold;
+            border: 1px solid #2f855a;
+        }
+        .report-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .right {
+            text-align: right;
+        }
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Pollos Carmesí</h1>
+        <p>Reporte de Rendimiento de Productos (Top Vendidos)</p>
+    </div>
+
+    <div class="meta-box">
+        <table>
+            <tr>
+                <td style="width: 15%;"><strong>Filtro Rango:</strong></td>
+                <td><span th:text="${fechaInicio} + ' al ' + ${fechaFin}">01/01/2026 al 15/01/2026</span></td>
+                <td style="width: 15%;"><strong>Generado el:</strong></td>
+                <td class="right"><span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm:ss')}">09/06/2026</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th style="width: 10%;" class="center">Ranking</th>
+                <th style="width: 15%;">ID Producto</th>
+                <th style="width: 35%;">Nombre</th>
+                <th style="width: 20%;">Categoría</th>
+                <th style="width: 10%;" class="center">Cant. Vendida</th>
+                <th style="width: 10%;" class="right">Total Recaudado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="prod : ${productos}">
+                <td class="center"><strong th:text="${prod.ranking}">1</strong></td>
+                <td th:text="${prod.idProducto}">101</td>
+                <td th:text="${prod.nombre}">1/4 de Pollo a la Brasa</td>
+                <td th:text="${prod.categoria}">Pollos</td>
+                <td class="center" th:text="${prod.cantidadVendida}">50</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(prod.totalRecaudado, 1, 2)}">$1125.00</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

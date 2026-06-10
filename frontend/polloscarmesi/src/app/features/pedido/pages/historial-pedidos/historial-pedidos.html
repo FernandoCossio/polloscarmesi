@@ -1,0 +1,139 @@
+<div class="card historial-pedidos-card">
+  <!-- Header -->
+  <app-header-historial></app-header-historial>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner text-5xl"></i>
+      <p>Cargando historial de pedidos...</p>
+    </div>
+  } @else {
+    <!-- Stats del Turno -->
+    <app-pedido-stats
+      [totalPedidos]="totalPedidos()"
+      [ingresosTurno]="ingresosTurno()"
+      [pedidosCancelados]="pedidosCancelados()"
+    ></app-pedido-stats>
+
+    <!-- Tabla de Pedidos -->
+    <app-tabla-historial
+      [pedidos]="pedidos()"
+      (verDetalles)="onVerDetalles($event)"
+      (cancelarPedido)="onCancelarPedido($event)"
+    ></app-tabla-historial>
+  }
+</div>
+
+<!-- Diálogo de Detalles del Pedido -->
+<p-dialog 
+  header="Detalles del Pedido #{{ selectedPedido()?.numeroFicha }}" 
+  [(visible)]="verDetallesVisible" 
+  [modal]="true" 
+  [style]="{ width: '480px' }"
+  class="details-dialog"
+>
+  @if (selectedPedido()) {
+    <div class="dialog-details-content">
+      <!-- Info General -->
+      <div class="info-group">
+        <div class="info-row">
+          <span class="label">Ficha / Ticket:</span>
+          <span class="value font-semibold">#{{ selectedPedido()?.numeroFicha }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Tipo de Pedido:</span>
+          <span class="value">{{ selectedPedido()?.tipo }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Estado Actual:</span>
+          <span class="value font-semibold">{{ selectedPedido()?.estado }}</span>
+        </div>
+        @if (selectedPedido()?.motivoCancelacion) {
+          <div class="info-row cancel-reason-row">
+            <span class="label">Motivo Cancelación:</span>
+            <span class="value text-red-500 font-medium">{{ selectedPedido()?.motivoCancelacion }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Detalles de Items -->
+      <div class="items-title">Productos Solicitados</div>
+      <div class="items-list">
+        @for (item of selectedPedido()?.detalles; track item.id) {
+          <div class="detail-item">
+            <div class="item-name-qty">
+              <span class="qty font-semibold">{{ item.cantidad }}x</span>
+              <span class="name">{{ item.producto.nombre }}</span>
+            </div>
+            <span class="subtotal font-medium">Bs. {{ item.subtotal | number:'1.2-2' }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Totales del Pedido -->
+      <div class="totals-group">
+        <div class="total-row">
+          <span class="label">Subtotal</span>
+          <span class="value">Bs. {{ selectedPedido()?.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="total-row">
+          <span class="label">Descuento</span>
+          <span class="value text-red-500">- Bs. {{ selectedPedido()?.descuento | number:'1.2-2' }}</span>
+        </div>
+        <div class="total-row grand-total">
+          <span class="label font-bold text-lg">Total Pedido</span>
+          <span class="value font-bold text-xl text-primary">Bs. {{ selectedPedido()?.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<!-- Diálogo para Cancelación de Pedido -->
+<p-dialog 
+  header="Cancelar Pedido #{{ selectedPedido()?.numeroFicha }}" 
+  [(visible)]="cancelarVisible" 
+  [modal]="true" 
+  [style]="{ width: '400px' }"
+>
+  <div class="dialog-cancel-content">
+    <p class="warning-text">¿Está seguro de que desea cancelar este pedido? Esta acción no se puede deshacer.</p>
+    
+    <div class="field-group">
+      <label for="motivo" class="font-semibold block mb-2">Motivo de Cancelación</label>
+      <input 
+        id="motivo" 
+        type="text" 
+        pInputText 
+        [ngModel]="motivoCancelacion()" 
+        (ngModelChange)="motivoCancelacion.set($event)"
+        placeholder="Ej. Error en los productos cargados..."
+        class="w-full"
+      />
+    </div>
+
+    <div class="actions-row mt-4">
+      <button 
+        pButton 
+        label="Cancelar" 
+        class="p-button-text p-button-secondary" 
+        (click)="cancelarVisible.set(false)"
+      ></button>
+      
+      <button 
+        pButton 
+        label="Confirmar Cancelación" 
+        [disabled]="!motivoCancelacion().trim()"
+        class="p-button-danger" 
+        (click)="confirmarCancelacion()"
+      ></button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Toast Support -->
+<p-toast></p-toast>

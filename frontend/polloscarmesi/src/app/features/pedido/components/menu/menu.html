@@ -1,0 +1,94 @@
+<div class="menu-container">
+  <!-- Filtros superiores: Búsqueda y Categorías -->
+  <div class="filters-bar">
+    <p-iconField iconPosition="left" class="search-field">
+      <p-inputIcon class="pi pi-search"></p-inputIcon>
+      <input 
+        type="text" 
+        pInputText 
+        placeholder="Buscar productos..." 
+        [value]="searchQuery" 
+        (input)="onSearchInput($event)"
+        class="w-full"
+      />
+    </p-iconField>
+
+    <div class="categories-list">
+      <button 
+        pButton 
+        [label]="'Todas'" 
+        [class.active]="selectedCategoriaId === null" 
+        (click)="onSelectCategory(null)"
+        class="p-button-rounded category-btn"
+      ></button>
+
+      @for (cat of categorias; track cat.id) {
+        <button 
+          pButton 
+          [label]="cat.nombre" 
+          [class.active]="selectedCategoriaId === cat.id" 
+          (click)="onSelectCategory(cat.id)"
+          class="p-button-rounded category-btn"
+        ></button>
+      }
+    </div>
+  </div>
+
+  <!-- Grid de Productos -->
+  <div class="products-grid">
+    @for (prod of productos; track prod.id) {
+      <div class="product-card" [class.disabled]="!prod.disponible">
+        <!-- Imagen y overlay de no disponible -->
+        <div class="image-wrapper">
+          @if (prod.imagenUrl) {
+            <img [src]="prod.imagenUrl" [alt]="prod.nombre" class="product-image" />
+          } @else {
+            <div class="image-placeholder">
+              <i class="pi pi-image text-4xl"></i>
+            </div>
+          }
+          @if (!prod.disponible) {
+            <div class="availability-overlay">
+              <span class="availability-badge">
+                <i class="pi pi-ban"></i> No disponible
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- Información del producto -->
+        <div class="product-info">
+          <h3 class="product-name">{{ prod.nombre }}</h3>
+          <p class="product-desc">{{ prod.descripcion || 'Sin descripción disponible' }}</p>
+          
+          <div class="product-footer">
+            <span class="product-price">Bs. {{ prod.precio | number:'1.2-2' }}</span>
+            
+            @if (prod.disponible) {
+              <button 
+                pButton 
+                icon="pi pi-plus" 
+                label="Agregar" 
+                (click)="onAddProduct(prod)"
+                class="add-btn p-button-sm"
+              ></button>
+            } @else {
+              <button 
+                pButton 
+                icon="pi pi-ban" 
+                label="Agregar" 
+                [disabled]="true"
+                class="add-btn-disabled p-button-sm"
+              ></button>
+            }
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="no-products col-span-full">
+        <i class="pi pi-inbox text-5xl mb-3"></i>
+        <p>No se encontraron productos en esta categoría o búsqueda.</p>
+      </div>
+    }
+  </div>
+</div>

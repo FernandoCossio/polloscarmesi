@@ -1,0 +1,10 @@
+<div class="report-container-card">
+  <app-header-reporte-rendimiento></app-header-reporte-rendimiento>
+  <app-filtros-reporte-rendimiento [loading]="loading()" (buscar)="onBuscar($event)" (exportExcel)="exportarExcel($event)" (exportPdf)="exportarPdf($event)"></app-filtros-reporte-rendimiento>
+  
+  @if (cargado() && reportData().length > 0) {
+    <app-stats-reporte-rendimiento [data]="reportData()"></app-stats-reporte-rendimiento>
+  }
+  
+  <app-ranking-productos [data]="reportData()" [cargado]="cargado()"></app-ranking-productos>
+</div>

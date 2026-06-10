@@ -1,0 +1,103 @@
+.custom-badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  background-color: var(--badge-bg);
+  color: var(--badge-color);
+  border: 1px solid var(--badge-border, transparent);
+  transition: all 0.2s ease;
+
+  .badge-icon {
+    font-size: 0.75rem;
+  }
+
+  &.pendiente {
+    --badge-bg: var(--p-warning-50);
+    --badge-color: var(--p-warning-700);
+    --badge-border: var(--p-warning-100);
+
+    .app-dark & {
+      --badge-bg: rgba(245, 124, 0, 0.1);
+      --badge-color: var(--p-warning-300);
+      --badge-border: rgba(245, 124, 0, 0.2);
+    }
+  }
+
+  &.confirmado {
+    --badge-bg: var(--p-primary-50);
+    --badge-color: var(--p-primary-700);
+    --badge-border: var(--p-primary-100);
+
+    .app-dark & {
+      --badge-bg: rgba(141, 78, 45, 0.1);
+      --badge-color: var(--p-primary-300);
+      --badge-border: rgba(141, 78, 45, 0.2);
+    }
+  }
+
+  &.en_preparacion {
+    --badge-bg: var(--p-orange-50);
+    --badge-color: var(--p-orange-700);
+    --badge-border: var(--p-orange-100);
+
+    .app-dark & {
+      --badge-bg: rgba(249, 115, 22, 0.1);
+      --badge-color: var(--p-orange-300);
+      --badge-border: rgba(249, 115, 22, 0.2);
+    }
+  }
+
+  &.en_camino {
+    --badge-bg: var(--p-indigo-50);
+    --badge-color: var(--p-indigo-700);
+    --badge-border: var(--p-indigo-100);
+
+    .app-dark & {
+      --badge-bg: rgba(99, 102, 241, 0.1);
+      --badge-color: var(--p-indigo-300);
+      --badge-border: rgba(99, 102, 241, 0.2);
+    }
+  }
+
+  &.listo {
+    --badge-bg: var(--p-info-50);
+    --badge-color: var(--p-info-700);
+    --badge-border: var(--p-info-100);
+
+    .app-dark & {
+      --badge-bg: rgba(2, 136, 209, 0.1);
+      --badge-color: var(--p-info-300);
+      --badge-border: rgba(2, 136, 209, 0.2);
+    }
+  }
+
+  &.entregado {
+    --badge-bg: var(--p-success-50);
+    --badge-color: var(--p-success-700);
+    --badge-border: var(--p-success-100);
+
+    .app-dark & {
+      --badge-bg: rgba(46, 125, 50, 0.1);
+      --badge-color: var(--p-success-300);
+      --badge-border: rgba(46, 125, 50, 0.2);
+    }
+  }
+
+  &.cancelado {
+    --badge-bg: var(--p-danger-50);
+    --badge-color: var(--p-danger-700);
+    --badge-border: var(--p-danger-100);
+
+    .app-dark & {
+      --badge-bg: rgba(211, 47, 47, 0.1);
+      --badge-color: var(--p-danger-300);
+      --badge-border: rgba(211, 47, 47, 0.2);
+    }
+  }
+}

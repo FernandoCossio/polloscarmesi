@@ -1,0 +1,32 @@
+package com.auth.domain.dtos.usuario;
+
+import com.auth.domain.enums.RolNombre;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record AdminCrearUsuarioDto(
+        @NotBlank(message = "El nombre de usuario es obligatorio")
+        @Size(min = 4, max = 50, message = "El usuario debe tener entre 4 y 50 caracteres")
+        String username,
+
+        @NotBlank(message = "El email es obligatorio")
+        @Email(message = "Formato de email inválido")
+        String email,
+
+        @NotBlank(message = "El nombre completo es obligatorio")
+        String nombreCompleto,
+
+        String telefono,
+
+        @NotBlank
+        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+        String password,
+
+        @NotNull(message = "El rol es obligatorio")
+        RolNombre rol,
+
+        Boolean activo
+) {
+}

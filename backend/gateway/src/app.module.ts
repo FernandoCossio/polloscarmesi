@@ -12,6 +12,9 @@ import { GatewayService } from './gateway/gateway.service';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { AuthRestModule } from './auth-rest/auth-rest.module';
 import { ProductosProxyController } from './productos-proxy.controller';
+import { PagosProxyController } from './pagos-proxy.controller';
+import { DocumentosProxyController } from './documentos-proxy.controller';
+import { UsuariosProxyController } from './usuarios-proxy.controller';
 import { ComprobantesProxyController } from './comprobantes-proxy.controller';
 
 const logger = new Logger('AppModule');
@@ -28,8 +31,6 @@ const logger = new Logger('AppModule');
       imports: [GatewayModule, AuditModule],
 
       useFactory: async (gatewayService: GatewayService) => {
-        // initialize() bloquea aquí hasta conectar con MS1 y MS-IA,
-        // así Apollo recibe el esquema unificado desde el primer momento.
         await gatewayService.initialize();
 
         const schema = gatewayService.getSchema();
@@ -59,8 +60,7 @@ const logger = new Logger('AppModule');
   ],
 
   controllers: [
-    ProductosProxyController,
-    ComprobantesProxyController,
+    ProductosProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController, ComprobantesProxyController,
   ],
 
   providers: [

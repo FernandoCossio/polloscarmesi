@@ -1,0 +1,125 @@
+.seccion-pago-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: var(--p-font-family, inherit);
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--p-surface-600);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.method-btn {
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-200);
+  border-radius: var(--p-border-radius-xl);
+  padding: 1.25rem;
+  color: var(--p-surface-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--p-surface-50);
+    border-color: var(--p-surface-300);
+    color: var(--p-surface-900);
+  }
+
+  &.active {
+    background: var(--p-primary-50) !important;
+    border: 2px solid var(--p-primary-color);
+    color: var(--p-primary-color);
+    font-weight: 700;
+  }
+}
+
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+
+  i {
+    font-size: 1.5rem;
+  }
+
+  span {
+    font-size: 0.95rem;
+  }
+}
+
+.amounts-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+
+  @media (min-width: 576px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.amount-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--p-surface-700);
+  }
+}
+
+.amount-input {
+  width: 100%;
+
+  ::ng-deep input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: var(--p-border-radius-lg);
+  }
+}
+
+.change-box {
+  background: var(--p-surface-50);
+  border: 1px solid var(--p-surface-200);
+  border-radius: var(--p-border-radius-lg);
+  padding: 0.75rem;
+  min-height: 2.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+
+  .change-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--p-surface-600);
+  }
+
+  &.valid {
+    background: var(--p-primary-50);
+    border-color: var(--p-primary-100);
+
+    .change-value {
+      color: var(--p-primary-700);
+    }
+  }
+
+  .check-icon {
+    font-size: 1.2rem;
+    color: var(--p-success);
+  }
+}

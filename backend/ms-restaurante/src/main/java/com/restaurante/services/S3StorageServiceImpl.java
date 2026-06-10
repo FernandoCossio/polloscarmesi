@@ -16,6 +16,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+
 @Service
 public class S3StorageServiceImpl implements ImageStorageService {
 
@@ -23,15 +25,59 @@ public class S3StorageServiceImpl implements ImageStorageService {
 
     private final S3Client s3Client;
     private final S3Properties s3Properties;
+    private final S3Presigner s3Presigner;
 
-    public S3StorageServiceImpl(S3Client s3Client, S3Properties s3Properties) {
+    public S3StorageServiceImpl(S3Client s3Client, S3Properties s3Properties, S3Presigner s3Presigner) {
         this.s3Client = s3Client;
         this.s3Properties = s3Properties;
+        this.s3Presigner = s3Presigner;
     }
 
     @Override
     public String store(MultipartFile file) throws IOException {
         return store(file, new StorageOptions("uploads"));
+    }
+
+    @Override
+    public String store(MultipartFile file, String customKey) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("No se puede guardar un archivo vacío");
+        }
+
+        String bucket = s3Properties.getBucket();
+
+        logger.info("Subiendo archivo a S3 con key personalizada: bucket={}, key={}", bucket, customKey);
+
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(customKey)
+                .contentType(file.getContentType())
+                .build();
+
+        s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+        return generateFileUrl(bucket, customKey);
+    }
+
+    @Override
+    public String generatePresignedUrl(String s3Key) {
+        if (s3Key == null || s3Key.isBlank()) {
+            return null;
+        }
+
+        String bucket = s3Properties.getBucket();
+
+        software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest = software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(s3Key)
+                .build();
+
+        software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest = software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest.builder()
+                .signatureDuration(java.time.Duration.ofMinutes(15))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
     @Override

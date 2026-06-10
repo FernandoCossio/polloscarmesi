@@ -48,6 +48,12 @@ public class Pago extends BaseEntity {
     @Column(name = "comprobante_url")
     private String comprobanteUrl;
 
+    @Column(name = "comprobante_s3_key")
+    private String comprobanteS3Key;
+
+    @Column(name = "fecha_subida")
+    private java.time.LocalDateTime fechaSubida;
+
     @Column(name = "tx_hash")
     private String txHash;
 }

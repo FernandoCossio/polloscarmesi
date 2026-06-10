@@ -1,0 +1,55 @@
+<div class="filters-card">
+  <div class="filters-header">
+    <i class="pi pi-filter"></i>
+    <span>Filtros de Búsqueda</span>
+  </div>
+
+  <div class="filters-grid">
+    <!-- Fecha Inicio -->
+    <div class="filter-field">
+      <label>Fecha Inicio</label>
+      <p-datePicker [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Fecha Fin -->
+    <div class="filter-field">
+      <label>Fecha Fin</label>
+      <p-datePicker [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Límite -->
+    <div class="filter-field">
+      <label>Límite Registros</label>
+      <input pInputText type="number" [(ngModel)]="limite" class="w-full" />
+    </div>
+
+    <!-- Tipo Pedido -->
+    <div class="filter-field">
+      <label>Tipo Pedido</label>
+      <p-select [(ngModel)]="tipoPedido" [options]="tiposPedido" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+    </div>
+
+    <!-- Estado Pago -->
+    <div class="filter-field">
+      <label>Estado Pago</label>
+      <p-select [(ngModel)]="estadoPago" [options]="estadosPago" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+    </div>
+
+    <!-- Método Pago -->
+    <div class="filter-field">
+      <label>Método Pago</label>
+      <p-select [(ngModel)]="metodoPago" [options]="metodosPago" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+    </div>
+  </div>
+
+  <div class="filters-actions">
+    <span class="actions-note">
+      Nota: La generación del reporte en PDF puede tardar unos segundos dependiendo del volumen de datos.
+    </span>
+    <div class="actions-buttons">
+      <button pButton label="Buscar" icon="pi pi-search" [loading]="loading" class="p-button-primary" (click)="onBuscar()"></button>
+      <button pButton label="Exportar Excel" icon="pi pi-file-excel" class="p-button-outlined p-button-success" (click)="onExportExcel()"></button>
+      <button pButton label="Exportar PDF" icon="pi pi-file-pdf" class="p-button-outlined p-button-danger" (click)="onExportPdf()"></button>
+    </div>
+  </div>
+</div>

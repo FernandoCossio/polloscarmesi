@@ -1,0 +1,40 @@
+<div class="card cola-pedidos-card">
+  <!-- Título principal de la pantalla -->
+  <div class="cola-header">
+    <h2>Pedidos en Cocina</h2>
+    <p>Órdenes activas en preparación</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner text-5xl"></i>
+      <p>Cargando pedidos en preparación...</p>
+    </div>
+  } @else {
+    <!-- Grid de Tarjetas de Pedidos -->
+    <div class="cola-grid">
+      @for (pedido of pedidos(); track pedido.id) {
+        <app-card-pedido 
+          [pedido]="pedido" 
+          (listo)="onListo($event)"
+        ></app-card-pedido>
+      } @empty {
+        <div class="empty-queue col-span-full">
+          <i class="pi pi-check-circle text-5xl mb-3 text-success"></i>
+          <p class="m-0 font-medium text-lg">¡Cocina al día! No hay pedidos pendientes.</p>
+        </div>
+      }
+    </div>
+
+    <!-- Indicador de cantidad inferior -->
+    <div class="cola-footer">
+      <div class="in-preparation-pill">
+        <i class="pi pi-clock"></i>
+        <span>{{ pedidosCount() }} {{ pedidosCount() === 1 ? 'pedido' : 'pedidos' }} en preparación</span>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Soporte para Toasts -->
+<p-toast></p-toast>

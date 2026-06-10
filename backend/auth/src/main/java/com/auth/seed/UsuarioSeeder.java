@@ -24,28 +24,74 @@ public class UsuarioSeeder {
     private final PasswordEncoder passwordEncoder;
 
     public void seed() {
+        int creados = 0;
 
-        String username = "admin";
-        if (usuarioRepository.findByUsernameIgnoreCase(username).isPresent()) {
-            log.info("[Seeder][Usuario] '{}' ya existe, omitiendo", username);
-            log.info("[Seeder][Usuario] Fin");
-            return;
-        }
-
-        Rol rolAdmin = rolRepository.findByNombre(RolNombre.ADMINISTRADOR)
-                .orElseThrow(() -> new IllegalStateException("Rol ADMINISTRADOR no encontrado"));
-
-        Usuario admin = construirUsuario(
-                username,
+        creados += crearUsuarioSiNoExiste(
+                "admin",
                 "admin@restaurante.com",
                 "Administrador",
-                "admin123",
+                RolNombre.ADMINISTRADOR
+        ) ? 1 : 0;
+
+        creados += crearUsuarioSiNoExiste(
+                "cajero",
+                "cajero@restaurante.com",
+                "Usuario Cajero",
+                RolNombre.CAJERO
+        ) ? 1 : 0;
+
+        creados += crearUsuarioSiNoExiste(
+                "cocina",
+                "cocina@restaurante.com",
+                "Usuario Cocina",
+                RolNombre.COCINA
+        ) ? 1 : 0;
+
+        creados += crearUsuarioSiNoExiste(
+                "repartidor",
+                "repartidor@restaurante.com",
+                "Usuario Repartidor",
+                RolNombre.REPARTIDOR
+        ) ? 1 : 0;
+
+        creados += crearUsuarioSiNoExiste(
+                "cliente",
+                "cliente@restaurante.com",
+                "Usuario Cliente",
+                RolNombre.CLIENTE
+        ) ? 1 : 0;
+
+        if (creados == 0) {
+            log.info("[Seeder][Usuario] Sin cambios");
+        } else {
+            log.info("[Seeder][Usuario] {} usuarios creados", creados);
+        }
+    }
+
+    private boolean crearUsuarioSiNoExiste(String username,
+                                           String email,
+                                           String nombreCompleto,
+                                           RolNombre rolNombre) {
+        if (usuarioRepository.findByUsernameIgnoreCase(username).isPresent()) {
+            log.info("[Seeder][Usuario] '{}' ya existe, omitiendo", username);
+            return false;
+        }
+
+        Rol rol = rolRepository.findByNombre(rolNombre)
+                .orElseThrow(() -> new IllegalStateException("Rol " + rolNombre + " no encontrado"));
+
+        Usuario usuario = construirUsuario(
+                username,
+                email,
+                nombreCompleto,
+                "123123",
                 true,
-                Set.of(rolAdmin)
+                Set.of(rol)
         );
 
-        usuarioRepository.save(admin);
-        log.info("[Seeder][Usuario] Creado: {}", username);
+        usuarioRepository.save(usuario);
+        log.info("[Seeder][Usuario] Creado: {} con rol {}", username, rolNombre);
+        return true;
     }
 
     private Usuario construirUsuario(String username,
