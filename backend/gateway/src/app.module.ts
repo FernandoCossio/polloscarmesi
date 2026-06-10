@@ -12,6 +12,7 @@ import { AuditInterceptor } from './audit/audit.interceptor';
 import { AuthRestModule } from './auth-rest/auth-rest.module';
 import { ProductosProxyController } from './productos-proxy.controller';
 import { PagosProxyController } from './pagos-proxy.controller';
+import { DocumentosProxyController } from './documentos-proxy.controller';
 
 const logger = new Logger('AppModule');
 
@@ -49,7 +50,7 @@ const logger = new Logger('AppModule');
     AuditModule,
     AuthRestModule,
   ],
-  controllers: [ProductosProxyController, PagosProxyController],
+  controllers: [ProductosProxyController, PagosProxyController, DocumentosProxyController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
