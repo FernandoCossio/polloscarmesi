@@ -42,6 +42,7 @@ public enum ErrorCode {
     // -------------------------------------------------------------------------
     USUARIO_NO_ENCONTRADO("USR101", HttpStatus.NOT_FOUND, "Usuario no encontrado"),
     USUARIO_DUPLICADO("USR201", HttpStatus.CONFLICT, "Username o email ya existe"),
+    USUARIO_ROL_NO_PERMITIDO("USR202", HttpStatus.BAD_REQUEST, "Rol no permitido para esta operación"),
 
     // -------------------------------------------------------------------------
     // ROL — Roles
