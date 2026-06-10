@@ -8,18 +8,12 @@ export const ORDER_STATUS = {
 
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 
-/**
- * Agrupa los estados activos (los que se muestran en la pestaña "Activos")
- */
 export const ACTIVE_STATUSES: OrderStatus[] = [
   ORDER_STATUS.PREPARANDO,
   ORDER_STATUS.ASIGNADO,
   ORDER_STATUS.EN_CAMINO,
 ];
 
-/**
- * Agrupa los estados finales (los que se muestran en la pestaña "Historial")
- */
 export const PAST_STATUSES: OrderStatus[] = [
   ORDER_STATUS.ENTREGADO,
   ORDER_STATUS.CANCELADO,
