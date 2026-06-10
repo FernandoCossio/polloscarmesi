@@ -1,0 +1,86 @@
+<p-dialog 
+  [header]="usuario ? 'Editar Usuario' : 'Nuevo Usuario'" 
+  [(visible)]="visible" 
+  [modal]="true" 
+  [style]="{ width: '450px' }"
+  (onHide)="close()">
+  
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 pt-2">
+    <!-- Nombre Completo -->
+    <div class="flex flex-col gap-2">
+      <label for="nombreCompleto" class="font-semibold text-surface-900 dark:text-surface-0">Nombre Completo</label>
+      <input pInputText id="nombreCompleto" formControlName="nombreCompleto" placeholder="Ej. Carlos Mendoza" class="w-full" />
+      <span *ngIf="form.get('nombreCompleto')?.touched && form.get('nombreCompleto')?.invalid" class="text-red-500 text-xs">
+        El nombre completo es obligatorio (min. 3 caracteres)
+      </span>
+    </div>
+
+    <!-- Nombre de Usuario -->
+    <div class="flex flex-col gap-2">
+      <label for="username" class="font-semibold text-surface-900 dark:text-surface-0">Nombre de Usuario</label>
+      <input pInputText id="username" formControlName="username" placeholder="Ej. cmendoza" class="w-full" />
+      <span *ngIf="form.get('username')?.touched && form.get('username')?.invalid" class="text-red-500 text-xs">
+        El usuario es obligatorio (min. 4 caracteres)
+      </span>
+    </div>
+
+    <!-- Email -->
+    <div class="flex flex-col gap-2">
+      <label for="email" class="font-semibold text-surface-900 dark:text-surface-0">Email</label>
+      <input pInputText id="email" type="email" formControlName="email" placeholder="Ej. c.mendoza@restaurant.com" class="w-full" />
+      <span *ngIf="form.get('email')?.touched && form.get('email')?.invalid" class="text-red-500 text-xs">
+        Ingrese un correo electrónico válido
+      </span>
+    </div>
+
+    <!-- Teléfono -->
+    <div class="flex flex-col gap-2">
+      <label for="telefono" class="font-semibold text-surface-900 dark:text-surface-0">Teléfono</label>
+      <input pInputText id="telefono" formControlName="telefono" placeholder="Ej. +54 9 11 5555-1234" class="w-full" />
+    </div>
+
+    <!-- Contraseña -->
+    <div class="flex flex-col gap-2">
+      <label for="password" class="font-semibold text-surface-900 dark:text-surface-0">
+        Contraseña <span *ngIf="usuario" class="text-xs text-surface-500 font-normal">(Dejar en blanco para no cambiar)</span>
+      </label>
+      <p-password 
+        id="password" 
+        formControlName="password" 
+        [toggleMask]="true" 
+        [feedback]="false" 
+        styleClass="w-full" 
+        inputStyleClass="w-full"
+        placeholder="Ingrese al menos 8 caracteres">
+      </p-password>
+      <span *ngIf="form.get('password')?.touched && form.get('password')?.invalid" class="text-red-500 text-xs">
+        La contraseña debe tener al menos 8 caracteres
+      </span>
+    </div>
+
+    <!-- Rol -->
+    <div class="flex flex-col gap-2">
+      <label for="rol" class="font-semibold text-surface-900 dark:text-surface-0">Rol</label>
+      <p-select 
+        id="rol" 
+        [options]="rolOptions" 
+        optionLabel="label" 
+        optionValue="value" 
+        formControlName="rol"
+        class="w-full">
+      </p-select>
+    </div>
+
+    <!-- Activo (Only if creating) -->
+    <div class="flex items-center gap-2 mt-2" *ngIf="!usuario">
+      <p-checkbox id="activo" formControlName="activo" [binary]="true"></p-checkbox>
+      <label for="activo" class="font-semibold text-surface-900 dark:text-surface-0 cursor-pointer">Activo al crear</label>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="flex justify-end gap-2 mt-4 border-t border-surface-200 dark:border-surface-800 pt-4">
+      <button pButton type="button" label="Cancelar" class="p-button-outlined p-button-secondary" (click)="close()"></button>
+      <button pButton type="submit" label="Guardar" [disabled]="form.invalid" class="p-button-primary"></button>
+    </div>
+  </form>
+</p-dialog>

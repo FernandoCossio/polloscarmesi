@@ -55,6 +55,11 @@ export const appRoutes: Routes = [
                 path: 'reporte-cierre-caja',
                 loadComponent: () => import('./app/features/reporte/pages/reporte-cierre-caja/reporte-cierre-caja').then(m => m.ReporteCierreCaja),
                 canActivate: [authGuard, roleGuard([ROLES.ADMINISTRADOR, ROLES.CAJERO])]
+            },
+            {
+                path: 'usuarios',
+                loadComponent: () => import('./app/features/usuario/pages/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
             }
         ]
     },
