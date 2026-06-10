@@ -90,7 +90,9 @@ export default function CheckoutScreen() {
       const payload = {
         clienteId: user?.id || '1',
         direccionEntrega: selectedAddress.address,
-        referencia: selectedAddress.name,
+        referencia: repartidorSeleccionado === 'none'
+          ? `${selectedAddress.name} [MANUAL]`
+          : selectedAddress.name,
         latitud: selectedAddress.lat,
         longitud: selectedAddress.lon,
         subtotal: cartTotal,
@@ -108,7 +110,7 @@ export default function CheckoutScreen() {
 
       let confirmationMessage = 'Tu pedido ha sido registrado con éxito.';
 
-      if (repartidorSeleccionado !== 'auto') {
+      if (repartidorSeleccionado !== 'auto' && repartidorSeleccionado !== 'none') {
         try {
           await RestaurantService.asignarRepartidor(order.id, repartidorSeleccionado);
           const chosenProfile = DRIVER_PROFILES[repartidorSeleccionado];
@@ -119,6 +121,8 @@ export default function CheckoutScreen() {
         } catch (assignErr: any) {
           console.warn('Error al forzar la asignación del repartidor:', assignErr.message);
         }
+      } else if (repartidorSeleccionado === 'none') {
+        confirmationMessage += `\n\nPedido creado SIN ASIGNAR. Puedes aceptarlo manualmente desde la pestaña "Disponibles" en la app del Repartidor.`;
       } else {
         // Asignación automática calculada
         const closest = getClosestDriver();
@@ -282,6 +286,28 @@ export default function CheckoutScreen() {
                     El sistema buscará al repartidor disponible más cercano por GPS (Ubicación activa).
                   </Text>
                 )}
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.driverOptionCard,
+                repartidorSeleccionado === 'none' && styles.activeDriverCard
+              ]}
+              onPress={() => setRepartidorSeleccionado('none')}
+            >
+              <MaterialIcons
+                name="lock-open"
+                size={22}
+                color={repartidorSeleccionado === 'none' ? '#B22222' : '#757575'}
+              />
+              <View style={styles.driverOptionInfo}>
+                <Text style={[styles.driverOptionName, repartidorSeleccionado === 'none' && styles.activeDriverText]}>
+                  Sin Asignar (Aceptación Manual)
+                </Text>
+                <Text style={styles.driverOptionSub}>
+                  El pedido quedará libre para que cualquier repartidor lo acepte desde la pestaña &quot;Disponibles&quot;.
+                </Text>
               </View>
             </TouchableOpacity>
 
@@ -590,6 +616,9 @@ const styles = StyleSheet.create({
   activeAddressOption: {
     borderColor: '#B22222',
     backgroundColor: '#FFF8F8',
+  },
+  activeAddressText: {
+    color: '#B22222',
   },
   addressOptionName: {
     fontSize: 13,

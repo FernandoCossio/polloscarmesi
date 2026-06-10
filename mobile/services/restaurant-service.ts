@@ -224,6 +224,7 @@ export const RestaurantService = {
           id
           estado
           direccionEntrega
+          subtotal
           total
           createdAt
           repartidorAsignado {

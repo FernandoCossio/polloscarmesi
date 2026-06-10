@@ -50,6 +50,8 @@ export default function OrdersScreen() {
           id: pedido.id,
           fecha: dateStr,
           items: itemsText,
+          subtotal: Number(pedido.subtotal),
+          envio: Number(pedido.total) - Number(pedido.subtotal),
           total: Number(pedido.total),
           estado: mapBackendStatusToMobile(pedido.estado),
           repartidor: repartidorText,
@@ -175,6 +177,17 @@ export default function OrdersScreen() {
             <Text style={styles.orderDate}>{item.fecha}</Text>
             <Text style={styles.orderItems}>{item.items}</Text>
 
+            <View style={styles.breakdownContainer}>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Subtotal</Text>
+                <Text style={styles.breakdownValue}>{item.subtotal} Bs.</Text>
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>Costo de Envío</Text>
+                <Text style={styles.breakdownValue}>{item.envio} Bs.</Text>
+              </View>
+            </View>
+
             <View style={styles.orderFooter}>
               <Text style={styles.orderTotalLabel}>Total:</Text>
               <Text style={styles.orderTotalValue}>{item.total} Bs.</Text>
@@ -295,18 +308,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F5F5F5',
-    paddingTop: 12,
+    marginTop: 8,
   },
   orderTotalLabel: {
     fontSize: 14,
-    color: '#757575',
+    color: '#3E2723',
+    fontWeight: 'bold',
   },
   orderTotalValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#B22222',
+  },
+  breakdownContainer: {
+    gap: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  breakdownLabel: {
+    fontSize: 12,
+    color: '#757575',
+  },
+  breakdownValue: {
+    fontSize: 12,
+    color: '#3E2723',
+    fontWeight: '500',
   },
   trackingContainer: {
     marginTop: 16,

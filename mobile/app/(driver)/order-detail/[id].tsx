@@ -30,6 +30,8 @@ export default function OrderDetailScreen() {
           cantidad: d.cantidad,
           precio: Number(d.precioUnitario),
         })),
+        subtotal: Number(data.subtotal),
+        envio: Number(data.total) - Number(data.subtotal),
         total: Number(data.total),
         pago: 'Efectivo/QR',
         estado: mapBackendStatusToMobile(data.estado),
@@ -168,6 +170,15 @@ export default function OrderDetailScreen() {
                 <Text style={styles.productPrice}>{prod.precio * prod.cantidad} Bs.</Text>
               </View>
             ))}
+            <View style={styles.divider} />
+            <View style={styles.breakdownRow}>
+              <Text style={styles.breakdownLabel}>Subtotal Productos</Text>
+              <Text style={styles.breakdownValue}>{order.subtotal} Bs.</Text>
+            </View>
+            <View style={styles.breakdownRow}>
+              <Text style={styles.breakdownLabel}>Costo de Envío</Text>
+              <Text style={styles.breakdownValue}>{order.envio} Bs.</Text>
+            </View>
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Monto total a cobrar ({order.pago}):</Text>
@@ -424,5 +435,20 @@ const styles = StyleSheet.create({
   photoSubtext: {
     fontSize: 11,
     color: '#757575',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    color: '#757575',
+  },
+  breakdownValue: {
+    fontSize: 13,
+    color: '#3E2723',
+    fontWeight: '500',
   },
 });
