@@ -5,6 +5,8 @@
   border-radius: var(--p-border-radius-xl, 24px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  max-width: 100%;
 
   .filters-header {
     display: flex;
@@ -26,22 +28,26 @@
 
   .filters-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.5rem;
     margin-bottom: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
 
     @media (min-width: 640px) {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     @media (min-width: 1024px) {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .filter-field {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      min-width: 0;
+      box-sizing: border-box;
 
       label {
         font-weight: 500;
