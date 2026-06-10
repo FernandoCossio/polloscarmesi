@@ -4,6 +4,7 @@ import { stitchSchemas } from '@graphql-tools/stitch';
 import { wrapSchema, schemaFromExecutor } from '@graphql-tools/wrap';
 import { buildHTTPExecutor } from '@graphql-tools/executor-http';
 import { GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
+import { InternalServiceAuthService } from '../auth-rest/internal-service-auth.service';
 
 @Injectable()
 export class GatewayService implements OnModuleDestroy {
@@ -11,7 +12,10 @@ export class GatewayService implements OnModuleDestroy {
   private schema: GraphQLSchema;
   private pollInterval: NodeJS.Timeout;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly internalServiceAuthService: InternalServiceAuthService,
+  ) {
     const Query = new GraphQLObjectType({
       name: 'Query',
       fields: {
@@ -70,6 +74,9 @@ export class GatewayService implements OnModuleDestroy {
     this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
     this.logger.log(`Conectando a MS-IA: ${msiaGraphqlUrl}`);
 
+    const internalAuthorizationHeader =
+      await this.internalServiceAuthService.getAuthorizationHeader();
+
     const crearExecutor = (endpoint: string) =>
       buildHTTPExecutor({
         endpoint,
@@ -80,6 +87,12 @@ export class GatewayService implements OnModuleDestroy {
 
           if (context?.req?.headers?.authorization) {
             headers['Authorization'] = context.req.headers.authorization;
+            return headers;
+          }
+
+          if (!context?.req) {
+            headers['Authorization'] =
+              internalAuthorizationHeader;
           }
 
           return headers;
