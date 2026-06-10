@@ -13,6 +13,7 @@ import { AuthRestModule } from './auth-rest/auth-rest.module';
 import { ProductosProxyController } from './productos-proxy.controller';
 import { PagosProxyController } from './pagos-proxy.controller';
 import { DocumentosProxyController } from './documentos-proxy.controller';
+import { UsuariosProxyController } from './usuarios-proxy.controller';
 
 const logger = new Logger('AppModule');
 
@@ -26,8 +27,6 @@ const logger = new Logger('AppModule');
       driver: ApolloDriver,
       imports: [GatewayModule, AuditModule],
       useFactory: async (gatewayService: GatewayService) => {
-        // initialize() bloquea aquí hasta conectar con MS1,
-        // así Apollo recibe el schema real desde el primer momento.
         await gatewayService.initialize();
 
         const schema = gatewayService.getSchema();
@@ -50,7 +49,7 @@ const logger = new Logger('AppModule');
     AuditModule,
     AuthRestModule,
   ],
-  controllers: [ProductosProxyController, PagosProxyController, DocumentosProxyController],
+  controllers: [ProductosProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
