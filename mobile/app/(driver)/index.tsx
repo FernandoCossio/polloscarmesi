@@ -1,35 +1,86 @@
-import React from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/auth-context';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ORDER_STATUS, OrderStatus } from '../../constants/orders';
-
-const ENTREGAS_MOCK = [
-  {
-    id: '1024',
-    cliente: 'Fernando Cossio',
-    direccion: 'Av. Busch, Calle 4 #123, Santa Cruz',
-    productos: '1x Combo Familiar Carmesí, 1x Papas Fritas Grandes',
-    total: 125,
-    pago: 'Efectivo',
-    estado: ORDER_STATUS.ASIGNADO as OrderStatus,
-  },
-  {
-    id: '1025',
-    cliente: 'Maria Rojas',
-    direccion: 'Av. Banzer, Cond. Sevilla #22, Santa Cruz',
-    productos: '1x Combo Personal, 1x Coca-Cola 2L',
-    total: 50,
-    pago: 'QR Code',
-    estado: ORDER_STATUS.ASIGNADO as OrderStatus,
-  },
-];
+import { mapBackendStatusToMobile } from '../../constants/orders';
+import { RestaurantService } from '../../services/restaurant-service';
 
 export default function DriverDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'mis_entregas' | 'disponibles'>('mis_entregas');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchOrders = useCallback(async (showLoading = true) => {
+    if (!user?.id) return;
+    if (showLoading) setIsLoading(true);
+    try {
+      let data: any[] = [];
+      if (activeTab === 'mis_entregas') {
+        data = await RestaurantService.obtenerPedidosPorRepartidor(user.id);
+      } else {
+        data = await RestaurantService.obtenerPedidosDeliverySinAsignar();
+      }
+
+      const formatted = data.map((pedido) => {
+        const itemsText = pedido.detalles
+          .map((d: any) => `${d.cantidad}x ${d.nombreProducto}`)
+          .join(', ');
+
+        return {
+          id: pedido.id,
+          cliente: `Cliente #${pedido.clienteId}`,
+          direccion: pedido.direccionEntrega,
+          productos: itemsText,
+          total: Number(pedido.total),
+          pago: 'Efectivo/QR',
+          estado: mapBackendStatusToMobile(pedido.estado),
+        };
+      });
+
+      setOrders(formatted);
+    } catch (err) {
+      console.error('Error fetching driver orders:', err);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id, activeTab]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchOrders(false);
+  };
+
+  const handleAcceptOrder = async (pedidoId: string) => {
+    if (!user?.id) return;
+    try {
+      setIsLoading(true);
+      await RestaurantService.asignarRepartidor(pedidoId, user.id);
+      Alert.alert('Pedido Asignado', 'Has aceptado el pedido. Ahora aparecerá en "Mis Entregas".');
+      setActiveTab('mis_entregas');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo asignar el pedido');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.loadingCenter]}>
+        <ActivityIndicator size="large" color="#5D4037" />
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -44,11 +95,34 @@ export default function DriverDashboard() {
         </TouchableOpacity>
       </View>
 
+      {/* Selector de Pestañas */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'mis_entregas' && styles.activeTab]}
+          onPress={() => setActiveTab('mis_entregas')}
+        >
+          <Text style={[styles.tabText, activeTab === 'mis_entregas' && styles.activeTabText]}>
+            Mis Entregas
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'disponibles' && styles.activeTab]}
+          onPress={() => setActiveTab('disponibles')}
+        >
+          <Text style={[styles.tabText, activeTab === 'disponibles' && styles.activeTabText]}>
+            Disponibles
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Lista de Pedidos a Entregar */}
       <FlatList
-        data={ENTREGAS_MOCK}
+        data={orders}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#5D4037']} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialIcons name="assignment-turned-in" size={60} color="#D7CCC8" />
@@ -58,7 +132,7 @@ export default function DriverDashboard() {
         renderItem={({ item }) => (
           <View style={styles.orderCard}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderId}>Pedido #{item.id}</Text>
+              <Text style={styles.orderId}>Pedido #{item.id.slice(0, 8)}...</Text>
               <Text style={styles.orderStatus}>{item.estado}</Text>
             </View>
 
@@ -81,13 +155,24 @@ export default function DriverDashboard() {
                 <Text style={styles.totalLabel}>Cobro ({item.pago}):</Text>
                 <Text style={styles.totalValue}>{item.total} Bs.</Text>
               </View>
-              <TouchableOpacity
-                style={styles.detailButton}
-                onPress={() => router.push(`/(driver)/order-detail/${item.id}`)}
-              >
-                <Text style={styles.detailButtonText}>Ver Detalles</Text>
-                <MaterialIcons name="chevron-right" size={16} color="#fff" />
-              </TouchableOpacity>
+              
+              {activeTab === 'mis_entregas' ? (
+                <TouchableOpacity
+                  style={styles.detailButton}
+                  onPress={() => router.push(`/(driver)/order-detail/${item.id}`)}
+                >
+                  <Text style={styles.detailButtonText}>Ver Detalles</Text>
+                  <MaterialIcons name="chevron-right" size={16} color="#fff" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.detailButton, { backgroundColor: '#4CAF50' }]}
+                  onPress={() => handleAcceptOrder(item.id)}
+                >
+                  <Text style={styles.detailButtonText}>Aceptar Pedido</Text>
+                  <MaterialIcons name="check" size={16} color="#fff" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -100,6 +185,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  loadingCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   driverBar: {
     flexDirection: 'row',
@@ -123,6 +213,30 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 6,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EFEA',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#5D4037',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#888',
+  },
+  activeTabText: {
+    color: '#5D4037',
   },
   listContainer: {
     padding: 16,

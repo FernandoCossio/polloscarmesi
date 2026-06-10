@@ -1,45 +1,60 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ORDER_STATUS, OrderStatus } from '../../../constants/orders';
-
-const ORDERS_DATABASE = {
-  '1024': {
-    cliente: 'Fernando Cossio',
-    telefono: '+591 76543210',
-    direccion: 'Av. Busch, Calle 4 #123, Santa Cruz',
-    productos: [
-      { nombre: 'Combo Familiar Carmesí', cantidad: 1, precio: 110 },
-      { nombre: 'Papas Fritas Grandes', cantidad: 1, precio: 15 },
-    ],
-    total: 125,
-    pago: 'Efectivo',
-    estadoInicial: ORDER_STATUS.ASIGNADO as OrderStatus,
-  },
-  '1025': {
-    cliente: 'Maria Rojas',
-    telefono: '+591 78945612',
-    direccion: 'Av. Banzer, Cond. Sevilla #22, Santa Cruz',
-    productos: [
-      { nombre: 'Combo Personal', cantidad: 1, precio: 35 },
-      { nombre: 'Coca-Cola 2 Litros', cantidad: 1, precio: 15 },
-    ],
-    total: 50,
-    pago: 'QR Code',
-    estadoInicial: ORDER_STATUS.ASIGNADO as OrderStatus,
-  },
-};
-
-type OrderIdType = keyof typeof ORDERS_DATABASE;
+import { ORDER_STATUS, OrderStatus, mapBackendStatusToMobile } from '../../../constants/orders';
+import { RestaurantService } from '../../../services/restaurant-service';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const order = ORDERS_DATABASE[id as OrderIdType];
-
+  const [order, setOrder] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [estado, setEstado] = useState<OrderStatus>(ORDER_STATUS.ASIGNADO);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  const fetchOrderDetail = useCallback(async () => {
+    if (!id) return;
+    setIsLoading(true);
+    try {
+      const data = await RestaurantService.obtenerPedidoDelivery(id);
+      
+      const formatted = {
+        cliente: `Cliente #${data.clienteId}`,
+        telefono: '+591 76543210',
+        direccion: data.direccionEntrega,
+        productos: data.detalles.map((d: any) => ({
+          nombre: d.nombreProducto,
+          cantidad: d.cantidad,
+          precio: Number(d.precioUnitario),
+        })),
+        total: Number(data.total),
+        pago: 'Efectivo/QR',
+        estado: mapBackendStatusToMobile(data.estado),
+      };
+
+      setOrder(formatted);
+      setEstado(formatted.estado);
+    } catch (err) {
+      console.error('Error fetching order details:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchOrderDetail();
+  }, [fetchOrderDetail]);
+
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.loadingCenter]}>
+        <ActivityIndicator size="large" color="#5D4037" />
+      </ThemedView>
+    );
+  }
 
   if (!order) {
     return (
@@ -50,23 +65,63 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const handleStartDelivery = () => {
-    setEstado(ORDER_STATUS.EN_CAMINO);
-    Alert.alert('Entrega Iniciada', 'El pedido ahora está marcado "En camino". El cliente podrá rastrearte.');
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permiso Requerido', 'Se necesitan permisos de cámara para tomar fotos de evidencia.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
-  const handleFinishDelivery = () => {
-    setEstado(ORDER_STATUS.ENTREGADO);
-    Alert.alert(
-      '¡Entrega Realizada!',
-      'Has completado la entrega de este pedido exitosamente.',
-      [
-        {
-          text: 'Ok',
-          onPress: () => router.replace('/(driver)'),
-        },
-      ]
-    );
+  const handleStartDelivery = async () => {
+    try {
+      setIsLoading(true);
+      await RestaurantService.actualizarEstadoDelivery(id, 'EN_CAMINO');
+      setEstado(ORDER_STATUS.EN_CAMINO);
+      Alert.alert('Entrega Iniciada', 'El pedido ahora está marcado "En camino". El cliente podrá ver tu avance.');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo iniciar la entrega');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFinishDelivery = async () => {
+    if (!imageUri) {
+      Alert.alert('Evidencia Requerida', 'Por favor, toma una fotografía de evidencia antes de confirmar la entrega.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await RestaurantService.confirmarEntrega(id, imageUri);
+      setEstado(ORDER_STATUS.ENTREGADO);
+      Alert.alert(
+        '¡Entrega Realizada!',
+        'Has completado la entrega de este pedido y subido la evidencia exitosamente.',
+        [
+          {
+            text: 'Ok',
+            onPress: () => router.replace('/(driver)'),
+          },
+        ]
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo finalizar la entrega');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -106,7 +161,7 @@ export default function OrderDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Productos</Text>
           <View style={styles.card}>
-            {order.productos.map((prod, index) => (
+            {order.productos.map((prod: { nombre: string; cantidad: number; precio: number }, index: number) => (
               <View key={index} style={styles.productRow}>
                 <Text style={styles.productQty}>{prod.cantidad}x</Text>
                 <Text style={styles.productName}>{prod.nombre}</Text>
@@ -120,6 +175,30 @@ export default function OrderDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* Foto de Evidencia */}
+        {estado === ORDER_STATUS.EN_CAMINO && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Evidencia de Entrega</Text>
+            <View style={styles.card}>
+              {imageUri ? (
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri: imageUri }} style={styles.evidenceImage} />
+                  <TouchableOpacity style={styles.changeImageButton} onPress={handlePickImage}>
+                    <MaterialIcons name="photo-camera" size={16} color="#fff" />
+                    <Text style={styles.changeImageText}>Volver a tomar foto</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.photoPlaceholder} onPress={handlePickImage}>
+                  <MaterialIcons name="photo-camera" size={40} color="#757575" />
+                  <Text style={styles.photoPlaceholderText}>Tomar Foto de Evidencia</Text>
+                  <Text style={styles.photoSubtext}>(Requerido para finalizar entrega)</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Acciones de Entrega */}
         <View style={styles.actionsContainer}>
@@ -153,6 +232,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  loadingCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContainer: {
     padding: 16,
@@ -295,5 +378,51 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  imageContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 12,
+  },
+  evidenceImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#EEEEEE',
+  },
+  changeImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#757575',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    gap: 4,
+  },
+  changeImageText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  photoPlaceholder: {
+    width: '100%',
+    height: 120,
+    borderWidth: 1.5,
+    borderColor: '#BDBDBD',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    gap: 4,
+  },
+  photoPlaceholderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#3E2723',
+  },
+  photoSubtext: {
+    fontSize: 11,
+    color: '#757575',
   },
 });

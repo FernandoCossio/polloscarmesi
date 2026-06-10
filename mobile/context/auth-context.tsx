@@ -3,6 +3,7 @@ import { MobileRole, mapBackendRoleToMobile } from '../constants/roles';
 import { AuthService, decodeJwt } from '../services/auth-service';
 
 interface User {
+  id: string;
   username: string;
   role: MobileRole;
 }
@@ -42,7 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const mobileRole = mapBackendRoleToMobile(backendRole);
       const userVal = payload.username || payload.userId || payload.sub || username;
 
+      // uid = numeric DB id (added in auth refactor). Fall back to sub (username) for older tokens.
+      const userId = payload.uid ? String(payload.uid) : (payload.sub || username);
       setUser({
+        id: userId,
         username: userVal,
         role: mobileRole,
       });

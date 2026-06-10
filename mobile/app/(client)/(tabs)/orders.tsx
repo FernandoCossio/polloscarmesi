@@ -1,40 +1,80 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ORDER_STATUS, OrderStatus, ACTIVE_STATUSES, PAST_STATUSES } from '../../../constants/orders';
+import { ORDER_STATUS, OrderStatus, ACTIVE_STATUSES, PAST_STATUSES, mapBackendStatusToMobile } from '../../../constants/orders';
+import { useAuth } from '../../../context/auth-context';
+import { RestaurantService } from '../../../services/restaurant-service';
 
-const PEDIDOS_MOCK = [
-  {
-    id: '1024',
-    fecha: 'Hoy, 20:15',
-    items: '1x Combo Familiar Carmesí, 1x Papas Fritas Grandes',
-    total: 125,
-    estado: ORDER_STATUS.EN_CAMINO as OrderStatus,
-    repartidor: 'Carlos Gómez',
-  },
-  {
-    id: '1019',
-    fecha: 'Ayer, 13:10',
-    items: '2x Combo Personal',
-    total: 70,
-    estado: ORDER_STATUS.ENTREGADO as OrderStatus,
-    repartidor: 'Ana Martínez',
-  },
-  {
-    id: '1008',
-    fecha: '02 Jun 2026, 21:00',
-    items: '1x Pollo Entero Carmesí, 1x Arroz con Queso',
-    total: 90,
-    estado: ORDER_STATUS.ENTREGADO as OrderStatus,
-    repartidor: 'Carlos Gómez',
-  },
-];
+// Mapeo amigable de los repartidores de desarrollo
+const DRIVER_PROFILES: Record<string, { name: string; email: string }> = {
+  '3': { name: 'Juan Pérez (Repartidor Principal)', email: 'repartidor@restaurante.com' },
+  '4': { name: 'Pedro Cajero (Cajero / Soporte)', email: 'cajero@restaurante.com' },
+};
 
 export default function OrdersScreen() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'activos' | 'historial'>('activos');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredOrders = PEDIDOS_MOCK.filter((pedido) => {
+  const fetchOrders = useCallback(async (showLoading = true) => {
+    if (!user?.id) return;
+    if (showLoading) setIsLoading(true);
+    try {
+      const data = await RestaurantService.obtenerPedidosDeliveryPorCliente(user.id);
+      
+      const formatted = data.map((pedido) => {
+        const itemsText = pedido.detalles
+          .map((d: any) => `${d.cantidad}x ${d.nombreProducto}`)
+          .join(', ');
+
+        const dateStr = pedido.createdAt
+          ? new Date(pedido.createdAt).toLocaleDateString('es-ES', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'Reciente';
+
+        const rep = pedido.repartidorAsignado;
+        let repartidorText = 'Asignación automática pendiente';
+        if (rep) {
+          const profile = DRIVER_PROFILES[rep.id.toString()];
+          repartidorText = profile 
+            ? `${profile.name} (${profile.email})` 
+            : (rep.nombre || `Repartidor #${rep.id}`);
+        }
+
+        return {
+          id: pedido.id,
+          fecha: dateStr,
+          items: itemsText,
+          total: Number(pedido.total),
+          estado: mapBackendStatusToMobile(pedido.estado),
+          repartidor: repartidorText,
+        };
+      });
+
+      setOrders(formatted);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchOrders(false);
+  };
+
+  const filteredOrders = orders.filter((pedido) => {
     if (activeTab === 'activos') {
       return ACTIVE_STATUSES.includes(pedido.estado);
     }
@@ -67,6 +107,14 @@ export default function OrdersScreen() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.loadingCenter]}>
+        <ActivityIndicator size="large" color="#B22222" />
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       {/* Selector de Pestañas */}
@@ -94,6 +142,9 @@ export default function OrdersScreen() {
         data={filteredOrders}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#B22222']} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialIcons name="receipt-long" size={60} color="#D7CCC8" />
@@ -103,7 +154,7 @@ export default function OrdersScreen() {
         renderItem={({ item }) => (
           <View style={styles.orderCard}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderId}>Pedido #{item.id}</Text>
+              <Text style={styles.orderId}>Pedido #{item.id.slice(0, 8)}...</Text>
               <View
                 style={[
                   styles.statusBadge,
@@ -151,6 +202,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  loadingCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabContainer: {
     flexDirection: 'row',

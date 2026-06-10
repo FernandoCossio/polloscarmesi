@@ -31,6 +31,9 @@ export function mapBackendStatusToMobile(backendStatus: string): OrderStatus {
     case 'PREPARANDO':
     case 'PREPARING':
     case 'COCINANDO':
+    case 'PENDIENTE':
+    case 'CONFIRMADO':
+    case 'EN_PREPARACION':
       return ORDER_STATUS.PREPARANDO;
     case 'EN_CAMINO':
     case 'DELIVERING':

@@ -1,44 +1,193 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCart } from '../../context/cart-context';
+import { useAuth } from '../../context/auth-context';
+import { RestaurantService } from '../../services/restaurant-service';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
+const ADDRESS_OPTIONS: {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lon: number;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+}[] = [
+  { id: 'casa', name: 'Mi Casa', address: 'Av. Busch, Calle 4 #123, Santa Cruz', lat: -17.7833, lon: -63.1821, icon: 'home' },
+  { id: 'uagrm', name: 'UAGRM - FICCT', address: 'Av. Centenario (Facultad de Tecnología)', lat: -17.7756, lon: -63.1945, icon: 'school' },
+  { id: 'ventura', name: 'Ventura Mall', address: 'Av. San Martín, Equipetrol Norte', lat: -17.7595, lon: -63.1925, icon: 'local-mall' },
+];
+
+const DRIVER_PROFILES: Record<string, { name: string; email: string }> = {
+  '3': { name: 'Juan Pérez (Repartidor Principal)', email: 'repartidor@restaurante.com' },
+  '4': { name: 'Pedro Cajero (Cajero / Soporte)', email: 'cajero@restaurante.com' },
+};
+
 export default function CheckoutScreen() {
   const { items, cartTotal, clearCart } = useCart();
-  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'qr' | 'tarjeta'>('efectivo');
+  const { user } = useAuth();
+  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'qr'>('efectivo');
+  const [selectedAddress, setSelectedAddress] = useState(ADDRESS_OPTIONS[0]);
+  const [repartidores, setRepartidores] = useState<any[]>([]);
+  const [repartidorSeleccionado, setRepartidorSeleccionado] = useState<string>('auto');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleConfirm = () => {
-    Alert.alert(
-      '¡Pedido Confirmado!',
-      'Tu pedido ha sido registrado con éxito. En un momento un repartidor se pondrá en marcha.',
-      [
-        {
-          text: 'Ok',
-          onPress: () => {
-            clearCart();
-            router.replace('/(client)/(tabs)/orders');
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const getClosestDriver = () => {
+    if (repartidores.length === 0) return null;
+    let closest: any = null;
+    let minDistance = Infinity;
+
+    for (const rep of repartidores) {
+      if (rep.coordenadasActuales) {
+        const [repLat, repLon] = rep.coordenadasActuales.split(',').map(Number);
+        if (!isNaN(repLat) && !isNaN(repLon)) {
+          const dist = calculateDistance(selectedAddress.lat, selectedAddress.lon, repLat, repLon);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closest = { ...rep, distance: dist };
+          }
+        }
+      }
+    }
+    return closest;
+  };
+
+  useEffect(() => {
+    const fetchRepartidores = async () => {
+      try {
+        const list = await RestaurantService.obtenerRepartidoresDisponibles();
+        setRepartidores(list || []);
+      } catch (err) {
+        console.error('Error fetching available drivers:', err);
+      }
+    };
+    fetchRepartidores();
+  }, []);
+
+  const handleConfirm = async () => {
+    if (items.length === 0) {
+      Alert.alert('Error', 'El carrito está vacío');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        clienteId: user?.id || '1',
+        direccionEntrega: selectedAddress.address,
+        referencia: selectedAddress.name,
+        latitud: selectedAddress.lat,
+        longitud: selectedAddress.lon,
+        subtotal: cartTotal,
+        descuento: 0,
+        total: cartTotal + 10,
+        detalles: items.map((item) => ({
+          productoId: String(item.id),
+          nombreProducto: item.nombre,
+          cantidad: item.cantidad,
+          precioUnitario: item.precio,
+        })),
+      };
+
+      const order = await RestaurantService.crearPedidoDelivery(payload);
+
+      let confirmationMessage = 'Tu pedido ha sido registrado con éxito.';
+
+      if (repartidorSeleccionado !== 'auto') {
+        try {
+          await RestaurantService.asignarRepartidor(order.id, repartidorSeleccionado);
+          const chosenProfile = DRIVER_PROFILES[repartidorSeleccionado];
+          const driverText = chosenProfile 
+            ? `${chosenProfile.name} (${chosenProfile.email})` 
+            : `Repartidor #${repartidorSeleccionado}`;
+          confirmationMessage += `\n\nAsignación MANUAL forzada a: ${driverText}.`;
+        } catch (assignErr: any) {
+          console.warn('Error al forzar la asignación del repartidor:', assignErr.message);
+        }
+      } else {
+        // Asignación automática calculada
+        const closest = getClosestDriver();
+        if (closest) {
+          const profile = DRIVER_PROFILES[closest.id.toString()];
+          const driverName = profile 
+            ? `${profile.name} (${profile.email})` 
+            : (closest.nombre || `Repartidor #${closest.id}`);
+          confirmationMessage += `\n\nAsignado AUTOMÁTICAMENTE por GPS a: ${driverName} (a ${closest.distance.toFixed(2)} km de ti).`;
+        } else {
+          const profile3 = DRIVER_PROFILES['3'];
+          confirmationMessage += `\n\nAsignado al ${profile3.name} (${profile3.email}) como fallback por defecto.`;
+        }
+      }
+
+      Alert.alert(
+        '¡Pedido Confirmado!',
+        confirmationMessage,
+        [
+          {
+            text: 'Ok',
+            onPress: () => {
+              clearCart();
+              router.replace('/(client)/(tabs)/orders');
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Error', err.message || 'No se pudo crear el pedido');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Dirección de Entrega */}
+        {/* Dirección de Entrega (Simulador de GPS) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Dirección de Entrega</Text>
-          <View style={styles.addressCard}>
-            <MaterialIcons name="location-on" size={24} color="#B22222" />
-            <View style={styles.addressDetails}>
-              <Text style={styles.addressTitle}>Mi Casa</Text>
-              <Text style={styles.addressText}>Av. Busch, Calle 4 #123, Santa Cruz</Text>
-            </View>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.addressOptionsContainer}>
+            {ADDRESS_OPTIONS.map((addr) => (
+              <TouchableOpacity
+                key={addr.id}
+                style={[
+                  styles.addressOptionCard,
+                  selectedAddress.id === addr.id && styles.activeAddressOption
+                ]}
+                onPress={() => setSelectedAddress(addr)}
+              >
+                <MaterialIcons
+                  name={addr.icon}
+                  size={20}
+                  color={selectedAddress.id === addr.id ? '#B22222' : '#757575'}
+                />
+                <Text style={[styles.addressOptionName, selectedAddress.id === addr.id && styles.activeAddressText]}>
+                  {addr.name}
+                </Text>
+                <Text style={styles.addressOptionText} numberOfLines={1}>
+                  {addr.address}
+                </Text>
+                <Text style={styles.addressOptionCoords}>
+                  Lat: {addr.lat.toFixed(4)}, Lon: {addr.lon.toFixed(4)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Resumen del Pedido */}
@@ -101,26 +250,120 @@ export default function CheckoutScreen() {
                 Código QR
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
 
+        {/* Asignación de Repartidor (Simulador) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Asignación de Repartidor</Text>
+          <View style={styles.driverOptionsContainer}>
             <TouchableOpacity
-              style={[styles.methodCard, metodoPago === 'tarjeta' && styles.activeMethod]}
-              onPress={() => setMetodoPago('tarjeta')}
+              style={[
+                styles.driverOptionCard,
+                repartidorSeleccionado === 'auto' && styles.activeDriverCard
+              ]}
+              onPress={() => setRepartidorSeleccionado('auto')}
             >
               <MaterialIcons
-                name="credit-card"
-                size={28}
-                color={metodoPago === 'tarjeta' ? '#B22222' : '#8D6E63'}
+                name="bolt"
+                size={22}
+                color={repartidorSeleccionado === 'auto' ? '#B22222' : '#757575'}
               />
-              <Text style={[styles.methodText, metodoPago === 'tarjeta' && styles.activeMethodText]}>
-                Tarjeta
-              </Text>
+              <View style={styles.driverOptionInfo}>
+                <Text style={[styles.driverOptionName, repartidorSeleccionado === 'auto' && styles.activeDriverText]}>
+                  Asignación Automática (Más cercano)
+                </Text>
+                {getClosestDriver() ? (
+                  <Text style={styles.driverOptionSub}>
+                    Se sugerirá a: {DRIVER_PROFILES[getClosestDriver()?.id]?.name || getClosestDriver()?.nombre} (a {getClosestDriver()?.distance?.toFixed(2)} km de ti)
+                  </Text>
+                ) : (
+                  <Text style={styles.driverOptionSub}>
+                    El sistema buscará al repartidor disponible más cercano por GPS (Ubicación activa).
+                  </Text>
+                )}
+              </View>
             </TouchableOpacity>
+
+            {repartidores.map((rep) => {
+              let distanceText = 'Ubicación desconocida';
+              if (rep.coordenadasActuales) {
+                const [repLat, repLon] = rep.coordenadasActuales.split(',').map(Number);
+                if (!isNaN(repLat) && !isNaN(repLon)) {
+                  const dist = calculateDistance(selectedAddress.lat, selectedAddress.lon, repLat, repLon);
+                  distanceText = `a ${dist.toFixed(2)} km de ti`;
+                }
+              }
+
+              const profile = DRIVER_PROFILES[rep.id.toString()];
+              const driverName = profile ? profile.name : (rep.nombre || `Repartidor #${rep.id}`);
+              const driverEmail = profile ? profile.email : `ID: ${rep.id}`;
+
+              return (
+                <TouchableOpacity
+                  key={rep.id}
+                  style={[
+                    styles.driverOptionCard,
+                    repartidorSeleccionado === rep.id && styles.activeDriverCard
+                  ]}
+                  onPress={() => setRepartidorSeleccionado(rep.id)}
+                >
+                  <MaterialIcons
+                    name="sports-motorsports"
+                    size={22}
+                    color={repartidorSeleccionado === rep.id ? '#B22222' : '#757575'}
+                  />
+                  <View style={styles.driverOptionInfo}>
+                    <Text style={[styles.driverOptionName, repartidorSeleccionado === rep.id && styles.activeDriverText]}>
+                      Asignar a: {driverName}
+                    </Text>
+                    <Text style={styles.driverOptionSub}>
+                      Email: {driverEmail} • Distancia: {distanceText}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Si no hay repartidores disponibles en línea, agregar opción de test de repartidor ID 3 */}
+            {repartidores.length === 0 && (
+              <TouchableOpacity
+                style={[
+                  styles.driverOptionCard,
+                  repartidorSeleccionado === '3' && styles.activeDriverCard
+                ]}
+                onPress={() => setRepartidorSeleccionado('3')}
+              >
+                <MaterialIcons
+                  name="sports-motorsports"
+                  size={22}
+                  color={repartidorSeleccionado === '3' ? '#B22222' : '#757575'}
+                />
+                <View style={styles.driverOptionInfo}>
+                  <Text style={[styles.driverOptionName, repartidorSeleccionado === '3' && styles.activeDriverText]}>
+                    Simular: {DRIVER_PROFILES['3'].name}
+                  </Text>
+                  <Text style={styles.driverOptionSub}>
+                    Email: {DRIVER_PROFILES['3'].email} • Fuerza la asignación directa de desarrollo.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
         {/* Botón de Confirmación */}
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} activeOpacity={0.8}>
-          <Text style={styles.confirmButtonText}>Confirmar Pedido - {cartTotal + 10} Bs.</Text>
+        <TouchableOpacity 
+          style={[styles.confirmButton, isSubmitting && styles.disabledButton]} 
+          onPress={handleConfirm} 
+          activeOpacity={0.8}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.confirmButtonText}>Confirmar Pedido - {cartTotal + 10} Bs.</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </ThemedView>
@@ -279,9 +522,88 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
   },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+  },
   confirmButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  driverOptionsContainer: {
+    gap: 8,
+  },
+  driverOptionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F0EFEA',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    gap: 12,
+  },
+  activeDriverCard: {
+    borderColor: '#B22222',
+    backgroundColor: '#FFF8F8',
+  },
+  driverOptionInfo: {
+    flex: 1,
+  },
+  driverOptionName: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#3E2723',
+  },
+  activeDriverText: {
+    color: '#B22222',
+  },
+  driverOptionSub: {
+    fontSize: 11,
+    color: '#757575',
+    marginTop: 2,
+  },
+  addressOptionsContainer: {
+    gap: 10,
+    paddingBottom: 4,
+    paddingHorizontal: 4,
+  },
+  addressOptionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F0EFEA',
+    width: 170,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    gap: 4,
+  },
+  activeAddressOption: {
+    borderColor: '#B22222',
+    backgroundColor: '#FFF8F8',
+  },
+  addressOptionName: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#3E2723',
+  },
+  addressOptionText: {
+    fontSize: 11,
+    color: '#757575',
+    marginTop: 2,
+  },
+  addressOptionCoords: {
+    fontSize: 9,
+    color: '#9E9E9E',
+    marginTop: 4,
   },
 });
