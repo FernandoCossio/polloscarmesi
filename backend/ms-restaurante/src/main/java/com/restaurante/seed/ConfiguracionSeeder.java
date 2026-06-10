@@ -25,6 +25,7 @@ public class ConfiguracionSeeder implements CommandLineRunner {
         seedConfiguracion("horarioAtencion", "11:00 AM - 10:00 PM");
         seedConfiguracion("tiempoMaximoPreparacion", "45");
         seedConfiguracion("umbralAlertaCocina", "30");
+        seedConfiguracion("coordenadas", "-17.78068307759428, -63.18512279411213");
         System.out.println("Seeder: Configuración inicial cargada exitosamente.");
     }
 

@@ -16,6 +16,9 @@ from app.api.routes.comprobantes import (
 from app.services.comprobantes_service import (
     init_comprobantes_service,
 )
+from app.services.internal_auth import (
+    init_internal_auth_service,
+)
 
 from app.core.security import (
     validar_configuracion_jwt,
@@ -31,6 +34,7 @@ async def lifespan(app: FastAPI):
     init_tiempo_pedidos_service()
     init_segmentacion_clientes_service()
     init_comprobantes_service()
+    init_internal_auth_service()
 
     logger.info("GraphQL disponible en /graphql")
 

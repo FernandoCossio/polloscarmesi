@@ -60,6 +60,11 @@ export const appRoutes: Routes = [
                 path: 'usuarios',
                 loadComponent: () => import('./app/features/usuario/pages/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
                 canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'configuracion',
+                loadComponent: () => import('./app/features/configuracion/pages/edicion/edicion').then(m => m.Edicion),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
             }
         ]
     },

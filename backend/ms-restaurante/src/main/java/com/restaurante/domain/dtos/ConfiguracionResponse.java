@@ -17,4 +17,5 @@ public class ConfiguracionResponse {
     private String horarioAtencion;
     private Integer tiempoMaximoPreparacion;
     private Integer umbralAlertaCocina;
+    private String coordenadas;
 }

@@ -42,6 +42,20 @@ export default () => {
         'http://localhost:8081/api',
     },
 
+    internalAuth: {
+      clientId:
+        process.env.INTERNAL_AUTH_CLIENT_ID ||
+        '',
+      clientSecret:
+        process.env.INTERNAL_AUTH_CLIENT_SECRET ||
+        '',
+      cacheSkewMs: parseInt(
+        process.env.INTERNAL_AUTH_CACHE_SKEW_MS ||
+          '60000',
+        10,
+      ),
+    },
+
     microservices: {
       ms1: {
         graphqlUrl:

@@ -47,7 +47,8 @@ export class AppMenu {
                 {
                     label: 'Gestion',
                     items: [
-                        { label: 'Gestion de usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/usuarios'] }
+                        { label: 'Gestion de usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/usuarios'] },
+                        { label: 'Configuración del Sistema', icon: 'pi pi-fw pi-cog', routerLink: ['/configuracion'] }
                     ]
                 },
                 {

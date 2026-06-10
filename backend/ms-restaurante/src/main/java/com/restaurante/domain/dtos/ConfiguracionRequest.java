@@ -36,4 +36,7 @@ public class ConfiguracionRequest {
     @NotNull(message = "El umbral de alerta de cocina es obligatorio")
     @Min(value = 1, message = "El umbral de alerta de cocina debe ser al menos 1 minuto")
     private Integer umbralAlertaCocina;
+
+    @NotBlank(message = "Las coordenadas son obligatorias")
+    private String coordenadas;
 }

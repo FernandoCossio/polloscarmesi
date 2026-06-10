@@ -24,6 +24,7 @@ public class RolSeeder {
         creados += crearRolSiNoExiste(RolNombre.COCINA, "Personal de cocina") ? 1 : 0;
         creados += crearRolSiNoExiste(RolNombre.REPARTIDOR, "Repartidor") ? 1 : 0;
         creados += crearRolSiNoExiste(RolNombre.CLIENTE, "Usuario cliente") ? 1 : 0;
+        creados += crearRolSiNoExiste(RolNombre.SYSTEM, "Cuenta tecnica para comunicacion entre microservicios") ? 1 : 0;
 
         if (creados == 0) {
             log.info("[Seeder][Rol] Sin cambios");

@@ -25,6 +25,7 @@ public class ConfiguracionService {
         String horarioAtencion = getValue("horarioAtencion");
         Integer tiempoMaximoPreparacion = Integer.valueOf(getValue("tiempoMaximoPreparacion"));
         Integer umbralAlertaCocina = Integer.valueOf(getValue("umbralAlertaCocina"));
+        String coordenadas = getValue("coordenadas");
 
         return new ConfiguracionResponse(
                 nombreRestaurante,
@@ -33,7 +34,8 @@ public class ConfiguracionService {
                 telefono,
                 horarioAtencion,
                 tiempoMaximoPreparacion,
-                umbralAlertaCocina
+                umbralAlertaCocina,
+                coordenadas
         );
     }
 
@@ -46,6 +48,7 @@ public class ConfiguracionService {
         setValue("horarioAtencion", request.getHorarioAtencion());
         setValue("tiempoMaximoPreparacion", String.valueOf(request.getTiempoMaximoPreparacion()));
         setValue("umbralAlertaCocina", String.valueOf(request.getUmbralAlertaCocina()));
+        setValue("coordenadas", request.getCoordenadas());
 
         return new ConfiguracionResponse(
                 request.getNombreRestaurante(),
@@ -54,7 +57,8 @@ public class ConfiguracionService {
                 request.getTelefono(),
                 request.getHorarioAtencion(),
                 request.getTiempoMaximoPreparacion(),
-                request.getUmbralAlertaCocina()
+                request.getUmbralAlertaCocina(),
+                request.getCoordenadas()
         );
     }
 
