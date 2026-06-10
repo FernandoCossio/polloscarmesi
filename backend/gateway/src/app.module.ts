@@ -4,6 +4,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
+
 import configuration from './config/configuration';
 import { GatewayModule } from './gateway/gateway.module';
 import { AuditModule } from './audit/audit.module';
@@ -14,6 +15,7 @@ import { ProductosProxyController } from './productos-proxy.controller';
 import { PagosProxyController } from './pagos-proxy.controller';
 import { DocumentosProxyController } from './documentos-proxy.controller';
 import { UsuariosProxyController } from './usuarios-proxy.controller';
+import { ComprobantesProxyController } from './comprobantes-proxy.controller';
 
 const logger = new Logger('AppModule');
 
@@ -23,15 +25,20 @@ const logger = new Logger('AppModule');
       load: [configuration],
       isGlobal: true,
     }),
+
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       imports: [GatewayModule, AuditModule],
+
       useFactory: async (gatewayService: GatewayService) => {
         await gatewayService.initialize();
 
         const schema = gatewayService.getSchema();
+
         logger.log(
-          `Apollo registrando schema: ${Object.keys(schema.getQueryType()?.getFields() ?? {})}`,
+          `Apollo registrando schema: ${Object.keys(
+            schema.getQueryType()?.getFields() ?? {},
+          )}`,
         );
 
         return {
@@ -42,14 +49,20 @@ const logger = new Logger('AppModule');
           csrfPrevention: false,
         };
       },
+
       inject: [GatewayService],
     }),
+
     HttpModule,
     GatewayModule,
     AuditModule,
     AuthRestModule,
   ],
-  controllers: [ProductosProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController],
+
+  controllers: [
+    ProductosProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController, ComprobantesProxyController,
+  ],
+
   providers: [
     {
       provide: APP_INTERCEPTOR,

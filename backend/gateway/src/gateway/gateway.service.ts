@@ -21,63 +21,131 @@ export class GatewayService implements OnModuleDestroy {
         },
       },
     });
+
     this.schema = new GraphQLSchema({ query: Query });
   }
 
   async initialize(): Promise<void> {
     let loaded = false;
+
     while (!loaded) {
       try {
         await this.loadSchemas();
         loaded = true;
       } catch (error) {
-        this.logger.warn(`MS1 offline, reintentando en 3s... - ${error.message}`);
+        this.logger.warn(
+          `Algún microservicio GraphQL está desconectado. Reintentando en 3s... - ${error.message}`,
+        );
+
         await new Promise((resolve) => setTimeout(resolve, 3000));
       }
     }
+
     this.startSchemaPolling();
   }
 
   onModuleDestroy() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+    }
   }
 
   async loadSchemas() {
-    const ms1GraphqlUrl = this.configService.get<string>('microservices.ms1.graphqlUrl');
-    if (!ms1GraphqlUrl) throw new Error('MS1_GRAPHQL_URL is not configured');
-
-    this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
-
-    const executor = buildHTTPExecutor({
-      endpoint: ms1GraphqlUrl,
-      headers: ({ context }: any) => {
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (context?.req?.headers?.authorization) {
-          headers['Authorization'] = context.req.headers.authorization;
-        }
-        return headers;
-      },
-    });
-
-    const remoteSchema = await schemaFromExecutor(executor);
-
-    this.logger.debug(
-      `Campos detectados en MS1: ${Object.keys(remoteSchema.getQueryType()?.getFields() ?? {})}`,
+    const ms1GraphqlUrl = this.configService.get<string>(
+      'microservices.ms1.graphqlUrl',
     );
 
-    const wrappedSchema = wrapSchema({ schema: remoteSchema, executor });
+    const msiaGraphqlUrl = this.configService.get<string>(
+      'microservices.msia.graphqlUrl',
+    );
+
+    if (!ms1GraphqlUrl) {
+      throw new Error('MS1_GRAPHQL_URL is not configured');
+    }
+
+    if (!msiaGraphqlUrl) {
+      throw new Error('MSIA_GRAPHQL_URL is not configured');
+    }
+
+    this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
+    this.logger.log(`Conectando a MS-IA: ${msiaGraphqlUrl}`);
+
+    const crearExecutor = (endpoint: string) =>
+      buildHTTPExecutor({
+        endpoint,
+        headers: ({ context }: any) => {
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+
+          if (context?.req?.headers?.authorization) {
+            headers['Authorization'] = context.req.headers.authorization;
+          }
+
+          return headers;
+        },
+      });
+
+    const ms1Executor = crearExecutor(ms1GraphqlUrl);
+    const msiaExecutor = crearExecutor(msiaGraphqlUrl);
+
+    const [ms1RemoteSchema, msiaRemoteSchema] = await Promise.all([
+      schemaFromExecutor(ms1Executor),
+      schemaFromExecutor(msiaExecutor),
+    ]);
+
+    this.logger.debug(
+      `Campos detectados en MS1: ${Object.keys(
+        ms1RemoteSchema.getQueryType()?.getFields() ?? {},
+      )}`,
+    );
+
+    this.logger.debug(
+      `Consultas detectadas en MS-IA: ${Object.keys(
+        msiaRemoteSchema.getQueryType()?.getFields() ?? {},
+      )}`,
+    );
+
+    this.logger.debug(
+      `Mutaciones detectadas en MS-IA: ${Object.keys(
+        msiaRemoteSchema.getMutationType()?.getFields() ?? {},
+      )}`,
+    );
+
+    const ms1WrappedSchema = wrapSchema({
+      schema: ms1RemoteSchema,
+      executor: ms1Executor,
+    });
+
+    const msiaWrappedSchema = wrapSchema({
+      schema: msiaRemoteSchema,
+      executor: msiaExecutor,
+    });
 
     this.schema = stitchSchemas({
-      subschemas: [{ schema: wrappedSchema, executor }],
+      subschemas: [
+        {
+          schema: ms1WrappedSchema,
+          executor: ms1Executor,
+        },
+        {
+          schema: msiaWrappedSchema,
+          executor: msiaExecutor,
+        },
+      ],
     });
 
     this.logger.debug(
-      `Schema listo: ${Object.keys(this.schema.getQueryType()?.getFields() ?? {})}`,
+      `Schema listo: ${Object.keys(
+        this.schema.getQueryType()?.getFields() ?? {},
+      )}`,
     );
   }
 
   private startSchemaPolling() {
-    const interval = this.configService.get<number>('schemaPollInterval') || 30000;
+    const interval =
+      this.configService.get<number>('schemaPollInterval') || 30000;
+
     this.pollInterval = setInterval(async () => {
       try {
         await this.loadSchemas();
