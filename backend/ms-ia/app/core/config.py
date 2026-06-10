@@ -13,6 +13,3 @@ REDIS_IA_HOST = os.getenv("REDIS_IA_HOST", "localhost")
 REDIS_IA_PORT = int(os.getenv("REDIS_IA_PORT", "6380"))
 REDIS_IA_DB = int(os.getenv("REDIS_IA_DB", "0"))
 REDIS_IA_PASSWORD = os.getenv("REDIS_IA_PASSWORD", None)
-
-VACANTE_TTL_DAYS = int(os.getenv("VACANTE_TTL_DAYS", "14"))
-VACANTE_TTL_SECONDS = VACANTE_TTL_DAYS * 24 * 3600
