@@ -13,6 +13,7 @@ export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
  */
 export const ACTIVE_STATUSES: OrderStatus[] = [
   ORDER_STATUS.PREPARANDO,
+  ORDER_STATUS.ASIGNADO,
   ORDER_STATUS.EN_CAMINO,
 ];
 
@@ -32,9 +33,11 @@ export function mapBackendStatusToMobile(backendStatus: string): OrderStatus {
     case 'PREPARING':
     case 'COCINANDO':
     case 'PENDIENTE':
-    case 'CONFIRMADO':
     case 'EN_PREPARACION':
       return ORDER_STATUS.PREPARANDO;
+    case 'CONFIRMADO':
+    case 'ASIGNADO':
+      return ORDER_STATUS.ASIGNADO;
     case 'EN_CAMINO':
     case 'DELIVERING':
     case 'RUTA':
