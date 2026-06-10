@@ -1,0 +1,66 @@
+<div class="ranking-card">
+  <div class="ranking-header">
+    <span class="ranking-title">Ranking de Productos</span>
+    <div class="info-note">
+      <i class="pi pi-info-circle"></i>
+      <span>Basado en volumen de ventas netas</span>
+    </div>
+  </div>
+
+  @if (!cargado) {
+    <div class="state-container unsearched-state">
+      <i class="pi pi-search"></i>
+      <span>Por favor, seleccione los filtros y presione Buscar para visualizar el ranking.</span>
+    </div>
+  } @else if (data.length === 0) {
+    <div class="state-container empty-state">
+      <i class="pi pi-info-circle"></i>
+      <span>No se encontraron registros para los filtros seleccionados.</span>
+    </div>
+  } @else {
+    <p-table [value]="data" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20]" styleClass="p-datatable-striped">
+      <ng-template #header>
+        <tr>
+          <th>RANKING</th>
+          <th>PRODUCTO</th>
+          <th>CATEGORÍA</th>
+          <th>CANTIDAD VENDIDA</th>
+          <th>TOTAL RECAUDADO</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td>
+            <div class="rank-circle" [class]="'rank-' + row.ranking">
+              @if (row.ranking === 1) {
+                <i class="pi pi-star-fill text-gold"></i>
+              } @else {
+                <span>{{ row.ranking }}</span>
+              }
+            </div>
+          </td>
+          <td>
+            <div class="product-cell">
+              <span class="product-name font-bold">{{ row.nombre }}</span>
+              <span class="product-desc">Rendimiento de ventas en el período</span>
+            </div>
+          </td>
+          <td>
+            <span class="category-pill">{{ row.categoria }}</span>
+          </td>
+          <td>
+            <div class="qty-cell">
+              <span class="qty-text font-bold">{{ row.cantidadVendida }} unidades</span>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" [style.width]="getProgressWidth(row.cantidadVendida)"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="revenue-text font-bold">{{ row.totalRecaudado | currency:'USD':'symbol':'1.2-2' }}</span>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</div>

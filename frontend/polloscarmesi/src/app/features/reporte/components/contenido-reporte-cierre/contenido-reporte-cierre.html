@@ -1,0 +1,178 @@
+<div class="content-container">
+  <!-- Empty State / Search Prompt -->
+  <div *ngIf="!cargado" class="empty-state-box">
+    <i class="pi pi-info-circle empty-icon"></i>
+    <h3>Cierre de Caja no Calculado</h3>
+    <p>Por favor, seleccione las fechas del turno, ingrese el saldo inicial y presione "Calcular Cierre" para visualizar el arqueo y balance.</p>
+  </div>
+
+  <div *ngIf="cargado && data" class="reports-grid">
+    <!-- Left Column: Pagos por Estado & Métodos de Pago -->
+    <div class="left-column">
+      <!-- Card: Pagos por Estado -->
+      <div class="report-card">
+        <h3 class="card-title">Pagos por Estado</h3>
+        <div class="table-responsive">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>ESTADO</th>
+                <th class="text-right">CANT.</th>
+                <th class="text-right">MONTO</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="state-dot-container">
+                    <span class="status-dot aceptado"></span>
+                    ACEPTADO
+                  </span>
+                </td>
+                <td class="text-right">{{ data.cantidadPagosAceptados }}</td>
+                <td class="text-right font-semibold text-emerald">Bs. {{ data.totalVentasAceptadas | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="state-dot-container">
+                    <span class="status-dot pendiente"></span>
+                    PENDIENTE
+                  </span>
+                </td>
+                <td class="text-right">{{ data.cantidadPagosPendientes }}</td>
+                <td class="text-right font-semibold text-amber">Bs. {{ data.totalVentasPendientes | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="state-dot-container">
+                    <span class="status-dot rechazado"></span>
+                    RECHAZADO
+                  </span>
+                </td>
+                <td class="text-right">{{ data.cantidadPagosRechazados }}</td>
+                <td class="text-right font-semibold text-rose">Bs. {{ data.totalVentasRechazadas | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="state-dot-container">
+                    <span class="status-dot revision_manual"></span>
+                    REVISIÓN MANUAL
+                  </span>
+                </td>
+                <td class="text-right">{{ data.cantidadPagosRevisionManual }}</td>
+                <td class="text-right font-semibold text-indigo">Bs. {{ data.totalVentasRevisionManual | number:'1.2-2' }}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total</td>
+                <td class="text-right font-bold">{{ data.cantidadPagos }}</td>
+                <td class="text-right font-bold text-total">Bs. {{ data.totalVentas | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card: Pagos Aceptados por Método -->
+      <div class="report-card">
+        <h3 class="card-title">Pagos Aceptados por Método</h3>
+        <div class="methods-list">
+          <!-- Efectivo -->
+          <div class="method-item">
+            <div class="method-icon-container bg-efectivo">
+              <i class="pi pi-money-bill"></i>
+            </div>
+            <div class="method-details">
+              <span class="method-name">EFECTIVO</span>
+              <span class="method-subtext text-emerald">Neto ingresado: Bs. {{ data.efectivoNetoIngresado | number:'1.2-2' }}</span>
+            </div>
+            <div class="method-values">
+              <span class="method-tx">{{ data.cantidadPagosEfectivoAceptados }} transacciones</span>
+              <span class="method-amount">Bs. {{ data.totalVentasEfectivoAceptadas | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- QR -->
+          <div class="method-item">
+            <div class="method-icon-container bg-qr">
+              <i class="pi pi-qrcode"></i>
+            </div>
+            <div class="method-details">
+              <span class="method-name">QR</span>
+              <span class="method-subtext">Transferencia directa</span>
+            </div>
+            <div class="method-values">
+              <span class="method-tx">{{ data.cantidadPagosQrAceptados }} transacciones</span>
+              <span class="method-amount">Bs. {{ data.totalVentasQrAceptadas | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Arqueo de Efectivo -->
+    <div class="right-column">
+      <div class="report-card arqueo-card">
+        <div class="card-header-with-icon">
+          <h3 class="card-title">Arqueo de Efectivo</h3>
+          <i class="pi pi-calculator arqueo-icon"></i>
+        </div>
+
+        <div class="arqueo-rows">
+          <div class="arqueo-row">
+            <div class="arqueo-row-info">
+              <span class="arqueo-row-title">SALDO INICIAL</span>
+              <span class="arqueo-row-desc">Fondo base en caja</span>
+            </div>
+            <span class="arqueo-row-val">Bs. {{ data.saldoInicial | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="arqueo-row">
+            <div class="arqueo-row-info">
+              <span class="arqueo-row-title">EFECTIVO NETO INGRESADO</span>
+              <span class="arqueo-row-desc">monto recibido menos cambio entregado</span>
+            </div>
+            <span class="arqueo-row-val">Bs. {{ data.efectivoNetoIngresado | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="arqueo-row highlight">
+            <span class="arqueo-row-title">EFECTIVO ESPERADO</span>
+            <span class="arqueo-row-val font-bold">Bs. {{ data.efectivoEsperadoEnCaja | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="arqueo-row">
+            <div class="arqueo-row-info">
+              <span class="arqueo-row-title">EFECTIVO CONTADO</span>
+              <span class="arqueo-row-desc">Ingresado manualmente por cajero</span>
+            </div>
+            <span class="arqueo-row-val">{{ data.efectivoContado !== null ? 'Bs. ' + (data.efectivoContado | number:'1.2-2') : 'Bs. 0.00' }}</span>
+          </div>
+        </div>
+
+        <!-- Difference Result Box -->
+        <div class="diff-box" [ngClass]="{
+          'diff-zero': data.diferenciaEfectivo === 0,
+          'diff-negative': data.diferenciaEfectivo < 0,
+          'diff-positive': data.diferenciaEfectivo > 0
+        }">
+          <span class="diff-label">DIFERENCIA</span>
+          <span class="diff-value">
+            <span *ngIf="data.diferenciaEfectivo > 0">+ </span>
+            <span *ngIf="data.diferenciaEfectivo < 0">- </span>
+            Bs. {{ absDiferencia | number:'1.2-2' }}
+          </span>
+          <span class="diff-status">
+            {{ data.diferenciaEfectivo === 0 ? 'Caja Cuadrada' : (data.diferenciaEfectivo < 0 ? 'Faltante' : 'Sobrante') }}
+          </span>
+          <div *ngIf="data.diferenciaEfectivo !== 0" class="diff-warning">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Requiere justificación del responsable</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

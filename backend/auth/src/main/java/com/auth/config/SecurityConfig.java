@@ -39,6 +39,7 @@ public class SecurityConfig {
 				).permitAll()
                 .requestMatchers("/auth/register").permitAll()
                 .requestMatchers("/auth/login").permitAll()
+				.requestMatchers("/usuarios/**").hasAuthority("ROLE_ADMINISTRADOR")
 				.anyRequest().authenticated()
 			)
 			.oauth2ResourceServer(oauth2 -> oauth2

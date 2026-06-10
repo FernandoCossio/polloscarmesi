@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Cierre de Caja</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #1a365d;
+            margin: 0 0 5px 0;
+        }
+        .header p {
+            margin: 0;
+            color: #555;
+            font-size: 12px;
+        }
+        .meta-box {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        .meta-box table {
+            width: 100%;
+        }
+        .meta-box td {
+            padding: 3px 10px;
+            font-size: 11px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        .report-table th {
+            background-color: #2b6cb0;
+            color: #fff;
+            text-align: left;
+            padding: 8px 10px;
+            font-weight: bold;
+            border: 1px solid #2b6cb0;
+        }
+        .report-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .right {
+            text-align: right;
+        }
+        .center {
+            text-align: center;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #edf2f7 !important;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a365d;
+            margin: 12px 0 6px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Pollos Carmesí</h1>
+        <p>Cierre de Caja</p>
+    </div>
+
+    <div class="meta-box">
+        <table>
+            <tr>
+                <td style="width: 22%;"><strong>Rango:</strong></td>
+                <td><span th:text="${#temporals.format(cierre.fechaInicio, 'yyyy-MM-dd HH:mm')} + ' al ' + ${#temporals.format(cierre.fechaFin, 'yyyy-MM-dd HH:mm')}">2026-06-09 00:00 al 2026-06-09 23:59</span></td>
+                <td style="width: 22%;"><strong>Generado:</strong></td>
+                <td class="right"><span th:text="${#temporals.format(cierre.generadoEn, 'dd/MM/yyyy HH:mm:ss')}">09/06/2026</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Resumen</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th class="right">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Cantidad de pagos (total)</td>
+                <td class="right" th:text="${cierre.cantidadPagos}">0</td>
+            </tr>
+            <tr class="total-row">
+                <td>Total ventas (total)</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentas, 1, 2)}">$0.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">Pagos por estado</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Estado</th>
+                <th class="right">Cantidad</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>ACEPTADO</td>
+                <td class="right" th:text="${cierre.cantidadPagosAceptados}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasAceptadas, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>PENDIENTE</td>
+                <td class="right" th:text="${cierre.cantidadPagosPendientes}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasPendientes, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>RECHAZADO</td>
+                <td class="right" th:text="${cierre.cantidadPagosRechazados}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasRechazadas, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>REVISION_MANUAL</td>
+                <td class="right" th:text="${cierre.cantidadPagosRevisionManual}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasRevisionManual, 1, 2)}">$0.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">Pagos ACEPTADOS por método</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Método</th>
+                <th class="right">Cantidad</th>
+                <th class="right">Ventas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>EFECTIVO</td>
+                <td class="right" th:text="${cierre.cantidadPagosEfectivoAceptados}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasEfectivoAceptadas, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>QR</td>
+                <td class="right" th:text="${cierre.cantidadPagosQrAceptados}">0</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.totalVentasQrAceptadas, 1, 2)}">$0.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">Arqueo de efectivo</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th class="right">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Saldo inicial</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.saldoInicial, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>Efectivo neto ingresado (monto recibido - cambio)</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.efectivoNetoIngresado, 1, 2)}">$0.00</td>
+            </tr>
+            <tr class="total-row">
+                <td>Efectivo esperado en caja</td>
+                <td class="right" th:text="${'$' + #numbers.formatDecimal(cierre.efectivoEsperadoEnCaja, 1, 2)}">$0.00</td>
+            </tr>
+            <tr>
+                <td>Efectivo contado</td>
+                <td class="right" th:text="${cierre.efectivoContado != null ? '$' + #numbers.formatDecimal(cierre.efectivoContado, 1, 2) : '-'}">-</td>
+            </tr>
+            <tr class="total-row">
+                <td>Diferencia (contado - esperado)</td>
+                <td class="right" th:text="${cierre.diferenciaEfectivo != null ? '$' + #numbers.formatDecimal(cierre.diferenciaEfectivo, 1, 2) : '-'}">-</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

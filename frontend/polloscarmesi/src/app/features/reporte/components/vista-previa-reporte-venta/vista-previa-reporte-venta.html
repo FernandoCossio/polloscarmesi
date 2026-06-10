@@ -1,0 +1,34 @@
+<div class="preview-card">
+  <div class="preview-header">
+    <div class="header-title-container">
+      <span class="header-title">Vista Previa del Reporte</span>
+      @if (cargado) {
+        <p-badge [value]="data.length.toString() + ' registros'" severity="secondary"></p-badge>
+      }
+    </div>
+  </div>
+
+  @if (!cargado) {
+    <div class="state-container unsearched-state">
+      <i class="pi pi-search"></i>
+      <span>Por favor, seleccione los filtros y presione Buscar para visualizar el reporte.</span>
+    </div>
+  } @else if (data.length === 0) {
+    <div class="state-container empty-state">
+      <i class="pi pi-info-circle"></i>
+      <span>No se encontraron registros para los filtros seleccionados.</span>
+    </div>
+  } @else {
+    <div class="table-container">
+      <app-tabla-reporte [data]="data" (actionClick)="onActionClick($event)"></app-tabla-reporte>
+    </div>
+
+    <div class="totals-footer">
+      <span class="totals-label">TOTAL ACUMULADO (VISTA ACTUAL)</span>
+      <div class="totals-value-container">
+        <span class="totals-count">{{ data.length }} registros seleccionados</span>
+        <span class="totals-amount">{{ totalAcumulado | currency:'USD':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+  }
+</div>
