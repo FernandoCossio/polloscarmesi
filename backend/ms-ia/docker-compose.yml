@@ -1,24 +1,4 @@
 services:
-  redis-ia:
-    image: redis/redis-stack-server:latest
-    container_name: redis-stack-ia
-    restart: always
-    networks:
-      - internal_ia_net
-    volumes:
-      - redis_data_ia:/data
-    environment:
-      - REDIS_ARGS=--requirepass ${REDIS_IA_PASSWORD} --appendonly yes --appendfsync everysec --dir /data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_IA_PASSWORD:-}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-
   ms-ia:
     build:
       context: .
@@ -28,26 +8,3 @@ services:
     user: "1000:1000"
     ports:
       - "127.0.0.1:${PORT}:8000"
-    networks:
-      - internal_ia_net
-    environment:
-      - REDIS_IA_HOST=redis-ia
-      - REDIS_IA_PORT=6379
-      - REDIS_IA_DB=${REDIS_IA_DB}
-      - REDIS_IA_PASSWORD=${REDIS_IA_PASSWORD}
-      - BGE_MODEL_NAME=${BGE_MODEL_NAME}
-      - BGE_USE_FP16=${BGE_USE_FP16}
-      - VACANTE_TTL_DAYS=${VACANTE_TTL_DAYS}
-    depends_on:
-      redis-ia:
-        condition: service_healthy    
-    volumes:
-      - huggingface_cache:/root/.cache/huggingface
-
-networks:
-  internal_ia_net:
-    driver: bridge
-
-volumes:
-  redis_data_ia:
-  huggingface_cache:
