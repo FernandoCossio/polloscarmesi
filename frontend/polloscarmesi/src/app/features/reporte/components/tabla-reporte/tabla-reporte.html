@@ -1,0 +1,32 @@
+<p-table [value]="data" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20]" styleClass="p-datatable-striped">
+  <ng-template #header>
+    <tr>
+      <th pSortableColumn="id">ID PAGO <p-sortIcon field="id"></p-sortIcon></th>
+      <th pSortableColumn="fecha">FECHA <p-sortIcon field="fecha"></p-sortIcon></th>
+      <th pSortableColumn="tipoPedido">TIPO PEDIDO <p-sortIcon field="tipoPedido"></p-sortIcon></th>
+      <th pSortableColumn="metodoPago">MÉTODO PAGO <p-sortIcon field="metodoPago"></p-sortIcon></th>
+      <th pSortableColumn="estadoPago">ESTADO PAGO <p-sortIcon field="estadoPago"></p-sortIcon></th>
+      <th pSortableColumn="montoTotal">MONTO TOTAL <p-sortIcon field="montoTotal"></p-sortIcon></th>
+      <th pSortableColumn="numeroFicha">FICHA <p-sortIcon field="numeroFicha"></p-sortIcon></th>
+      <th>ACCIONES</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-row>
+    <tr>
+      <td>{{ row.id }}</td>
+      <td>{{ row.fecha | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+      <td>
+        <app-tipo-pedido-badge [tipo]="row.tipoPedido"></app-tipo-pedido-badge>
+      </td>
+      <td>{{ row.metodoPago }}</td>
+      <td>
+        <app-pago-estado-badge [estado]="row.estadoPago"></app-pago-estado-badge>
+      </td>
+      <td>{{ row.montoTotal | currency:'USD':'symbol':'1.2-2' }}</td>
+      <td>{{ row.numeroFicha || '-' }}</td>
+      <td>
+        <button pButton icon="pi pi-eye" class="p-button-text p-button-rounded" (click)="onActionClick(row)"></button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

@@ -1,0 +1,29 @@
+<div class="stats-grid" *ngIf="data">
+  <!-- Card 1: Total Pagos -->
+  <div class="stat-card">
+    <div class="stat-value">{{ data.cantidadPagos }}</div>
+    <div class="stat-label">TOTAL PAGOS</div>
+    <div class="stat-desc">pagos registrados en el período</div>
+  </div>
+
+  <!-- Card 2: Total Ventas -->
+  <div class="stat-card">
+    <div class="stat-value highlight-sales">Bs. {{ data.totalVentas | number:'1.2-2' }}</div>
+    <div class="stat-label">TOTAL VENTAS</div>
+    <div class="stat-desc">monto total acumulado</div>
+  </div>
+
+  <!-- Card 3: Pagos Aceptados -->
+  <div class="stat-card border-emerald">
+    <div class="stat-value text-emerald">{{ data.cantidadPagosAceptados }}</div>
+    <div class="stat-label">PAGOS ACEPTADOS</div>
+    <div class="stat-desc">de {{ data.cantidadPagos }} registrados</div>
+  </div>
+
+  <!-- Card 4: En Revision / Pendientes -->
+  <div class="stat-card border-amber">
+    <div class="stat-value text-amber">{{ revisionOPendientes }}</div>
+    <div class="stat-label">EN REVISIÓN / PENDIENTES</div>
+    <div class="stat-desc">requieren atención</div>
+  </div>
+</div>

@@ -1,0 +1,20 @@
+<div class="stats-container">
+  <!-- Tarjeta 1: Producto #1 -->
+  <div class="stat-card top-product-card">
+    <span class="stat-label">Producto #1</span>
+    <span class="stat-value font-bold">{{ topProducto ? topProducto.nombre : 'Sin Datos' }}</span>
+    <span class="stat-subtext">más vendido del período</span>
+  </div>
+
+  <!-- Tarjeta 2: Total Unidades Vendidas -->
+  <div class="stat-card">
+    <span class="stat-label">Total Unidades Vendidas</span>
+    <span class="stat-value font-bold">{{ totalUnidades | number }} <span class="stat-unit">units.</span></span>
+  </div>
+
+  <!-- Tarjeta 3: Total Recaudado -->
+  <div class="stat-card">
+    <span class="stat-label">Total Recaudado</span>
+    <span class="stat-value font-bold total-amount">{{ totalRecaudado | currency:'USD':'symbol':'1.2-2' }}</span>
+  </div>
+</div>

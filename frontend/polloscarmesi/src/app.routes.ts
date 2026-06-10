@@ -40,6 +40,21 @@ export const appRoutes: Routes = [
                 path: 'cola-pedidos',
                 loadComponent: () => import('./app/features/pedido/pages/cola-pedidos/cola-pedidos').then(m => m.ColaPedidos),
                 canActivate: [authGuard, roleGuard([ROLES.COCINA, ROLES.ADMINISTRADOR])]
+            },
+            {
+                path: 'reporte-ventas',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-ventas/reporte-ventas').then(m => m.ReporteVentas),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'reporte-rendimiento',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-rendimiento/reporte-rendimiento').then(m => m.ReporteRendimiento),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'reporte-cierre-caja',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-cierre-caja/reporte-cierre-caja').then(m => m.ReporteCierreCaja),
+                canActivate: [authGuard, roleGuard([ROLES.ADMINISTRADOR, ROLES.CAJERO])]
             }
         ]
     },

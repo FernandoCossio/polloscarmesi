@@ -1,0 +1,45 @@
+<div class="filters-card">
+  <div class="filters-header">
+    <i class="pi pi-filter"></i>
+    <span>Filtros de Búsqueda</span>
+  </div>
+
+  <div class="filters-grid">
+    <!-- Fecha Inicio -->
+    <div class="filter-field">
+      <label>Fecha Inicio</label>
+      <p-datePicker [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Fecha Fin -->
+    <div class="filter-field">
+      <label>Fecha Fin</label>
+      <p-datePicker [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Saldo Inicial -->
+    <div class="filter-field">
+      <label>Saldo Inicial (Bs.)</label>
+      <p-inputNumber [(ngModel)]="saldoInicial" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" styleClass="w-full" placeholder="0.00"></p-inputNumber>
+      <span class="helper-text">Efectivo en caja al inicio del turno</span>
+    </div>
+
+    <!-- Efectivo Contado -->
+    <div class="filter-field">
+      <label>Efectivo Contado (Bs.)</label>
+      <p-inputNumber [(ngModel)]="efectivoContado" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" styleClass="w-full" placeholder="0.00"></p-inputNumber>
+      <span class="helper-text">Efectivo físico contado al cerrar</span>
+    </div>
+  </div>
+
+  <div class="filters-actions">
+    <span class="actions-note">
+      Nota: El PDF se generará, almacenará en S3 y recibirás un enlace de descarga.
+    </span>
+    <div class="actions-buttons">
+      <button pButton label="Calcular Cierre" icon="pi pi-calculator" [loading]="loading" class="p-button-primary" (click)="onBuscar()"></button>
+      <button pButton label="Exportar Excel" icon="pi pi-file-excel" class="p-button-outlined p-button-success" (click)="onExportExcel()"></button>
+      <button pButton label="Exportar PDF" icon="pi pi-file-pdf" class="p-button-outlined p-button-danger" (click)="onExportPdf()"></button>
+    </div>
+  </div>
+</div>

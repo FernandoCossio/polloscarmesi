@@ -1,0 +1,5 @@
+<div class="report-container-card">
+  <app-header-reporte-venta></app-header-reporte-venta>
+  <app-filtros-reporte-venta [loading]="loading()" (buscar)="onBuscar($event)" (exportExcel)="exportarExcel($event)" (exportPdf)="exportarPdf($event)"></app-filtros-reporte-venta>
+  <app-vista-previa-reporte-venta [data]="reportData()" [cargado]="cargado()" (viewReceipt)="onViewReceipt($event)"></app-vista-previa-reporte-venta>
+</div>

@@ -38,13 +38,24 @@ export class AppMenu {
                     items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
                 },
                 {
-                    label: 'Gestión',
+                    label: 'Menu',
                     items: [
                         { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categorias'] },
                         { label: 'Productos', icon: 'pi pi-fw pi-shopping-bag', routerLink: ['/productos'] },
-                        { label: 'Registrar Pedido', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/registrar-pedido'] },
-                        { label: 'Historial de Pedidos', icon: 'pi pi-fw pi-history', routerLink: ['/historial-pedidos'] },
-                        { label: 'Cola de Cocina', icon: 'pi pi-fw pi-list-check', routerLink: ['/cola-pedidos'] }
+                    ]
+                },
+                {
+                    label: 'Gestion',
+                    items: [
+                        { label: 'Gestion de usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/usuarios'] }
+                    ]
+                },
+                {
+                    label: 'Reportes',
+                    items: [
+                        { label: 'Reporte de Ventas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/reporte-ventas'] },
+                        { label: 'Rendimiento de Productos', icon: 'pi pi-fw pi-percentage', routerLink: ['/reporte-rendimiento'] },
+                        { label: 'Cierre de Caja', icon: 'pi pi-fw pi-lock', routerLink: ['/reporte-cierre-caja'] }
                     ]
                 }
             ];
@@ -56,7 +67,8 @@ export class AppMenu {
                     label: 'Pedidos',
                     items: [
                         { label: 'Registrar Pedido', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/registrar-pedido'] },
-                        { label: 'Historial de Pedidos', icon: 'pi pi-fw pi-history', routerLink: ['/historial-pedidos'] }
+                        { label: 'Historial de Pedidos', icon: 'pi pi-fw pi-history', routerLink: ['/historial-pedidos'] },
+                        { label: 'Cierre de Caja', icon: 'pi pi-fw pi-lock', routerLink: ['/reporte-cierre-caja'] }
                     ]
                 }
             ];
