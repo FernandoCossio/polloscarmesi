@@ -20,10 +20,10 @@
       <!-- RUC y Telefono Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="field-item">
-          <label for="ruc">NIT/RUC</label>
+          <label for="ruc">RUC</label>
           <input pInputText id="ruc" formControlName="ruc" placeholder="Ej: 10456789123" class="w-full" />
           <span *ngIf="form.get('ruc')?.touched && form.get('ruc')?.invalid" class="validation-error text-red-500 text-xs mt-1">
-            El NIT/RUC es obligatorio
+            El RUC es obligatorio
           </span>
         </div>
 
@@ -36,12 +36,31 @@
         </div>
       </div>
 
-      <!-- Direccion -->
+      <!-- Coordenadas y Direccion Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="field-item">
+          <label for="coordenadas">Coordenadas</label>
+          <input pInputText id="coordenadas" formControlName="coordenadas" readonly placeholder="Haga clic en el mapa..." class="w-full bg-surface-50 dark:bg-surface-950 cursor-not-allowed" />
+          <span *ngIf="form.get('coordenadas')?.touched && form.get('coordenadas')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            Las coordenadas son obligatorias (haga clic en el mapa)
+          </span>
+        </div>
+
+        <div class="field-item">
+          <label for="direccion">Dirección</label>
+          <input pInputText id="direccion" formControlName="direccion" placeholder="Ej: Av. Principal 123, Cusco" class="w-full" />
+          <span *ngIf="form.get('direccion')?.touched && form.get('direccion')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            La dirección es obligatoria
+          </span>
+        </div>
+      </div>
+
+      <!-- Mapa para Seleccionar Ubicación -->
       <div class="field-item">
-        <label for="direccion">Dirección</label>
-        <input pInputText id="direccion" formControlName="direccion" placeholder="Ej: Av. Principal 123, Cusco" class="w-full" />
-        <span *ngIf="form.get('direccion')?.touched && form.get('direccion')?.invalid" class="validation-error text-red-500 text-xs mt-1">
-          La dirección es obligatoria
+        <label>Ubicación en el Mapa</label>
+        <div id="config-map" class="w-full"></div>
+        <span class="helper-text text-surface-500 dark:text-surface-400 text-xs">
+          Haga clic en el mapa o arrastre el marcador para auto-completar las coordenadas y la dirección.
         </span>
       </div>
 

@@ -6,6 +6,7 @@ export interface Configuracion {
   horarioAtencion: string;
   tiempoMaximoPreparacion: number;
   umbralAlertaCocina: number;
+  coordenadas: string;
 }
 
 export interface ConfiguracionInput {
@@ -16,4 +17,5 @@ export interface ConfiguracionInput {
   horarioAtencion: string;
   tiempoMaximoPreparacion: number;
   umbralAlertaCocina: number;
+  coordenadas: string;
 }

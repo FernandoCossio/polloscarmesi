@@ -23,6 +23,7 @@ export class ConfiguracionService {
           horarioAtencion
           tiempoMaximoPreparacion
           umbralAlertaCocina
+          coordenadas
         }
       }
     `;
@@ -42,6 +43,7 @@ export class ConfiguracionService {
           horarioAtencion
           tiempoMaximoPreparacion
           umbralAlertaCocina
+          coordenadas
         }
       }
     `;
