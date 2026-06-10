@@ -1,0 +1,17 @@
+<div class="report-container-card">
+  <app-header-edicion></app-header-edicion>
+  
+  <div *ngIf="loading()" class="flex items-center justify-center py-12">
+    <i class="pi pi-spin pi-spinner text-4xl text-surface-400"></i>
+  </div>
+
+  <app-contenido-edicion 
+    *ngIf="!loading() && configData()"
+    [configuracion]="configData()"
+    [saving]="saving()"
+    (save)="onSave($event)"
+    (cancel)="onCancel()">
+  </app-contenido-edicion>
+</div>
+
+<p-toast></p-toast>
