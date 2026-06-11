@@ -51,6 +51,9 @@ import { ChatModule } from './chat/chat.module';
           DispositivoToken,
         ],
         synchronize: true,
+        ssl: config.get<boolean>('database.ssl')
+          ? { rejectUnauthorized: false }
+          : false,
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({

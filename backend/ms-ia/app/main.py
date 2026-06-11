@@ -57,18 +57,32 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
-]
+import os
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+if cors_origins_env == "*" or not cors_origins_env:
+    allow_origin_regex = "https?://.*"
+    origins = []
+else:
+    allow_origin_regex = None
+    origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+
+if allow_origin_regex:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(graphql_router, prefix="/graphql")
 
