@@ -9,6 +9,7 @@ import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AuthService } from '@/app/features/auth/services/auth.service';
 import { AppFloatingConfigurator } from '@/app/layout/component/app.floatingconfigurator';
+import { ROLES } from '@/app/core/constants/role.constant';
 
 @Component({
   selector: 'app-login',
@@ -30,6 +31,16 @@ export class LoginComponent {
   isSubmitting = false;
   errorMessage: string | null = null;
 
+  private getRedirectUrlByRole(): string {
+    const roles = this.auth.getRoles();
+
+    if (roles.includes(ROLES.ADMINISTRADOR)) return '/dashboard';
+    if (roles.includes(ROLES.CAJERO)) return '/registrar-pedido';
+    if (roles.includes(ROLES.COCINA)) return '/cola-pedidos';
+
+    return '/dashboard';
+  }
+
   onSubmit(): void {
     if (!this.username || !this.password) {
       this.errorMessage = 'Ingrese usuario y contraseña';
@@ -42,7 +53,7 @@ export class LoginComponent {
     this.auth.login({ username: this.username, password: this.password }).subscribe({
       next: () => {
         this.isSubmitting = false;
-        void this.router.navigateByUrl('/');
+        void this.router.navigateByUrl(this.getRedirectUrlByRole());
       },
       error: () => {
         this.isSubmitting = false;

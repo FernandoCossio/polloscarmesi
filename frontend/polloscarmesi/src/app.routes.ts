@@ -10,7 +10,7 @@ export const appRoutes: Routes = [
         path: '',
         component: AppLayout,
         children: [
-            { path: '', component: Dashboard, canActivate: [authGuard] },
+            { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
             { 
                 path: 'categorias', 
                 loadComponent: () => import('./app/features/categoria/pages/list/list').then(m => m.List),
