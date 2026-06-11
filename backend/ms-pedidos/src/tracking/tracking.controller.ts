@@ -3,8 +3,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { TrackingService } from './tracking.service';
 import { PuntoClaveDto } from './dto/punto-clave.dto';
 import { ConfirmarEntregaDto } from './dto/confirmar-entrega.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Controller('api/v1/delivery/tracking')
 @UseGuards(JwtAuthGuard)
@@ -34,17 +34,27 @@ export class TrackingController {
     @UploadedFile() file: any,
     @CurrentUser() user: any,
   ) {
-    if (!file) {
-      throw new BadRequestException('El archivo de evidencia fotográfica es requerido');
+    try {
+      if (!file) {
+        throw new BadRequestException('El archivo de evidencia fotográfica es requerido');
+      }
+      const repartidorId = user?.userId;
+      if (!repartidorId) {
+        throw new BadRequestException('No se pudo identificar al repartidor');
+      }
+
+      const pedido = await this.trackingService.confirmarEntrega(
+        dto?.pedidoId,
+        repartidorId,
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+      );
+      return { success: true, message: 'Entrega confirmada', pedido };
+    } catch (err) {
+      console.error('CRITICAL ERROR in tracking.controller.ts (ms-pedidos):', err);
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException(`Error interno en ms-pedidos: ${err.message}`);
     }
-    const repartidorId = user.userId;
-    const pedido = await this.trackingService.confirmarEntrega(
-      dto.pedidoId,
-      repartidorId,
-      file.buffer,
-      file.originalname,
-      file.mimetype,
-    );
-    return { success: true, message: 'Entrega confirmada', pedido };
   }
 }

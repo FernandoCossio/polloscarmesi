@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PedidoDelivery, EstadoDelivery } from '../entities/pedido-delivery.entity';
@@ -87,67 +87,73 @@ export class TrackingService {
     originalName: string,
     mimetype: string,
   ): Promise<PedidoDelivery> {
-    const pedido = await this.pedidoRepo.findOne({
-      where: { id: pedidoId },
-      relations: { detalles: true },
-    });
+    try {
+      const pedido = await this.pedidoRepo.findOne({
+        where: { id: pedidoId },
+        relations: { detalles: true },
+      });
 
-    if (!pedido) {
-      throw new NotFoundException(`Pedido con ID ${pedidoId} no encontrado`);
-    }
+      if (!pedido) {
+        throw new NotFoundException(`Pedido con ID ${pedidoId} no encontrado`);
+      }
 
-    // 1. Generate key and upload image
-    const extension = originalName.split('.').pop() || 'jpg';
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '/');
-    const timestamp = Date.now();
-    const customKey = `evidencias/${dateStr}/${pedidoId}-${timestamp}.${extension}`;
+      // 1. Generate key and upload image
+      const extension = originalName?.split('.').pop() || 'jpg';
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '/');
+      const timestamp = Date.now();
+      const customKey = `evidencias/${dateStr}/${pedidoId}-${timestamp}.${extension}`;
 
-    const url = await this.s3Service.uploadFile(fileBuffer, customKey, mimetype);
+      const url = await this.s3Service.uploadFile(fileBuffer, customKey, mimetype);
 
-    // 2. Save order state
-    pedido.estado = EstadoDelivery.ENTREGADO;
-    pedido.evidenciaUrl = url;
-    pedido.evidenciaS3Key = customKey;
-    const savedPedido = await this.pedidoRepo.save(pedido);
+      // 2. Save order state
+      pedido.estado = EstadoDelivery.ENTREGADO;
+      pedido.evidenciaUrl = url;
+      pedido.evidenciaS3Key = customKey;
+      const savedPedido = await this.pedidoRepo.save(pedido);
 
-    // 3. Liberate driver
-    await this.asignacionService.liberarRepartidorPorPedido(pedidoId, true);
+      // 3. Liberate driver
+      await this.asignacionService.liberarRepartidorPorPedido(pedidoId, true);
 
-    // 4. Log GPS and Event in DynamoDB
-    if (pedido.latitud && pedido.longitud) {
-      await this.dynamoDbService.logGps(
+      // 4. Log GPS and Event in DynamoDB
+      if (pedido.latitud && pedido.longitud) {
+        await this.dynamoDbService.logGps(
+          pedidoId,
+          repartidorId,
+          'ENTREGADO',
+          Number(pedido.latitud),
+          Number(pedido.longitud),
+        );
+      }
+      await this.dynamoDbService.logEvent(pedidoId, 'ENTREGA_CONFIRMADA', {
+        repartidorId,
+        evidenciaUrl: url,
+      });
+
+      // 5. Publish event to Redis
+      await this.redisService.publish('entrega.confirmada', {
         pedidoId,
         repartidorId,
-        'ENTREGADO',
-        Number(pedido.latitud),
-        Number(pedido.longitud),
-      );
-    }
-    await this.dynamoDbService.logEvent(pedidoId, 'ENTREGA_CONFIRMADA', {
-      repartidorId,
-      evidenciaUrl: url,
-    });
+        evidenciaUrl: url,
+        timestamp: new Date().toISOString(),
+      });
 
-    // 5. Publish event to Redis
-    await this.redisService.publish('entrega.confirmada', {
-      pedidoId,
-      repartidorId,
-      evidenciaUrl: url,
-      timestamp: new Date().toISOString(),
-    });
+      // 6. Notify customer
+      try {
+        await this.notificacionesService.enviarNotificacion(
+          pedido.clienteId,
+          '¡Pedido Entregado!',
+          `Tu pedido Carmesí ha sido entregado correctamente. ¡Que lo disfrutes!`,
+          { pedidoId },
+        );
+      } catch (err) {
+        this.logger.warn(`Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`);
+      }
 
-    // 6. Notify customer
-    try {
-      await this.notificacionesService.enviarNotificacion(
-        pedido.clienteId,
-        '¡Pedido Entregado!',
-        `Tu pedido Carmesí ha sido entregado correctamente. ¡Que lo disfrutes!`,
-        { pedidoId },
-      );
+      return savedPedido;
     } catch (err) {
-      this.logger.warn(`Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`);
+      if (err instanceof NotFoundException) throw err;
+      this.logger.error(`Error in confirmarEntrega: ${err.message}`, err.stack);
+      throw new BadRequestException(`Fallo al confirmar entrega: ${err.message}`);
     }
-
-    return savedPedido;
   }
 }

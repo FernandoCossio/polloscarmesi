@@ -150,13 +150,17 @@ export class PedidoDeliveryService {
       clienteId: savedPedido.clienteId,
     });
 
-    setTimeout(async () => {
-      try {
-        await this.asignacionService.asignarRepartidorAutomaticamente(savedPedido);
-      } catch (err) {
-        this.logger.error(`Failed auto-assigning driver for Pedido ${savedPedido.id}: ${err.message}`);
-      }
-    }, 1000);
+    if (!input.referencia?.includes('[MANUAL]')) {
+      setTimeout(async () => {
+        try {
+          await this.asignacionService.asignarRepartidorAutomaticamente(savedPedido);
+        } catch (err) {
+          this.logger.error(`Failed auto-assigning driver for Pedido ${savedPedido.id}: ${err.message}`);
+        }
+      }, 1000);
+    } else {
+      this.logger.log(`Skipping automatic driver assignment for Pedido ${savedPedido.id} (Manual mode triggered via reference)`);
+    }
 
     return savedPedido;
   }

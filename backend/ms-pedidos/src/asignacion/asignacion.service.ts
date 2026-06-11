@@ -76,14 +76,13 @@ export class AsignacionService {
 
     if (!lat || !lon) {
       this.logger.warn(`Pedido ${pedido.id} lacks coordinates. Falling back to default driver assignment.`);
-      // Default to driver ID 4 (seeded repartidor) for dev convenience
-      return this.crearAsignacionDirecta(pedido, 4);
+      return this.crearAsignacionDirecta(pedido, 3);
     }
 
     const disponibles = await this.obtenerRepartidoresDisponibles();
     if (disponibles.length === 0) {
-      this.logger.warn(`No drivers available for Pedido ${pedido.id}. Auto-assigning default driver ID 4.`);
-      return this.crearAsignacionDirecta(pedido, 4);
+      this.logger.warn(`No drivers available for Pedido ${pedido.id}. Auto-assigning default driver ID 3.`);
+      return this.crearAsignacionDirecta(pedido, 3);
     }
 
     let closestDriver: RepartidorDisponibilidad | null = null;
@@ -110,7 +109,7 @@ export class AsignacionService {
     }
 
     // Fallback if coordinates were null
-    return this.crearAsignacionDirecta(pedido, 4);
+    return this.crearAsignacionDirecta(pedido, 3);
   }
 
   async crearAsignacionDirecta(pedido: PedidoDelivery, repartidorId: number): Promise<Asignacion> {

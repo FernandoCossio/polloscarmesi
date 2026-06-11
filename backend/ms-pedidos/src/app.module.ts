@@ -5,6 +5,9 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import configuration from './config/configuration';
 
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
+
 // Entities
 import { PedidoDelivery } from './entities/pedido-delivery.entity';
 import { DetallePedidoDelivery } from './entities/detalle-pedido-delivery.entity';
@@ -63,6 +66,10 @@ import { PedidoDeliveryModule } from './pedido-delivery/pedido-delivery.module';
     IncidenciasModule,
     AutomatizacionModule,
     PedidoDeliveryModule,
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   providers: [],
 })
