@@ -1,0 +1,99 @@
+<div class="stats-container">
+  
+  <!-- VENTAS TOTALES -->
+  <div class="stat-card">
+    <div>
+      <span class="stat-label">Ventas Totales</span>
+      <div class="stat-value">
+        Bs. {{ (resumen?.ventasTotales?.valor | number:'1.2-2') || '0.00' }}
+      </div>
+      <span class="stat-unit">Unidades: BOB</span>
+    </div>
+    <div class="flex align-items-center">
+      <span class="stat-badge"
+            [ngStyle]="{
+              'background': isPositive(resumen?.ventasTotales?.diferenciaPorcentaje || 0) ? 'var(--p-success-50)' : 'var(--p-danger-50)',
+              'color': isPositive(resumen?.ventasTotales?.diferenciaPorcentaje || 0) ? 'var(--p-success-700)' : 'var(--p-danger-700)'
+            }">
+        <i class="pi mr-1" [ngClass]="isPositive(resumen?.ventasTotales?.diferenciaPorcentaje || 0) ? 'pi-arrow-up' : 'pi-arrow-down'"></i>
+        <span>{{ abs(resumen?.ventasTotales?.diferenciaPorcentaje || 0) }}% vs ayer</span>
+      </span>
+    </div>
+    <div class="stat-icon-container cart">
+      <i class="pi pi-shopping-cart text-xl"></i>
+    </div>
+  </div>
+
+  <!-- TICKET PROMEDIO -->
+  <div class="stat-card">
+    <div>
+      <span class="stat-label">Ticket Promedio</span>
+      <div class="stat-value">
+        Bs. {{ (resumen?.ticketPromedio?.valor | number:'1.2-2') || '0.00' }}
+      </div>
+      <span class="stat-unit">Unidades: BOB</span>
+    </div>
+    <div class="flex align-items-center">
+      <span class="stat-badge"
+            [ngStyle]="{
+              'background': isPositive(resumen?.ticketPromedio?.diferenciaPorcentaje || 0) ? 'var(--p-success-50)' : 'var(--p-danger-50)',
+              'color': isPositive(resumen?.ticketPromedio?.diferenciaPorcentaje || 0) ? 'var(--p-success-700)' : 'var(--p-danger-700)'
+            }">
+        <i class="pi mr-1" [ngClass]="isPositive(resumen?.ticketPromedio?.diferenciaPorcentaje || 0) ? 'pi-arrow-up' : 'pi-arrow-down'"></i>
+        <span>{{ abs(resumen?.ticketPromedio?.diferenciaPorcentaje || 0) }}% vs ayer</span>
+      </span>
+    </div>
+    <div class="stat-icon-container ticket">
+      <i class="pi pi-file text-xl"></i>
+    </div>
+  </div>
+
+  <!-- PEDIDOS ENTREGADOS -->
+  <div class="stat-card">
+    <div>
+      <span class="stat-label">Pedidos Entregados</span>
+      <div class="stat-value">
+        {{ (resumen?.pedidosEntregados?.valor | number:'1.0-0') || '0' }}
+      </div>
+      <span class="stat-unit">Unidades: pedidos</span>
+    </div>
+    <div class="flex align-items-center">
+      <span class="stat-badge"
+            [ngStyle]="{
+              'background': isPositive(resumen?.pedidosEntregados?.diferenciaPorcentaje || 0) ? 'var(--p-success-50)' : 'var(--p-danger-50)',
+              'color': isPositive(resumen?.pedidosEntregados?.diferenciaPorcentaje || 0) ? 'var(--p-success-700)' : 'var(--p-danger-700)'
+            }">
+        <i class="pi mr-1" [ngClass]="isPositive(resumen?.pedidosEntregados?.diferenciaPorcentaje || 0) ? 'pi-arrow-up' : 'pi-arrow-down'"></i>
+        <span>{{ abs(resumen?.pedidosEntregados?.diferenciaPorcentaje || 0) }}% vs ayer</span>
+      </span>
+    </div>
+    <div class="stat-icon-container delivered">
+      <i class="pi pi-check-circle text-xl"></i>
+    </div>
+  </div>
+
+  <!-- TIEMPO COCINA PROM. -->
+  <div class="stat-card">
+    <div>
+      <span class="stat-label">Tiempo Cocina Prom.</span>
+      <div class="stat-value">
+        {{ (resumen?.tiempoCocinaPromedio?.valor | number:'1.1-1') || '0.0' }}
+      </div>
+      <span class="stat-unit">Unidades: min</span>
+    </div>
+    <div class="flex align-items-center">
+      <span class="stat-badge"
+            [ngStyle]="{
+              'background': (resumen?.tiempoCocinaPromedio?.diferenciaPorcentaje || 0) <= 0 ? 'var(--p-success-50)' : 'var(--p-danger-50)',
+              'color': (resumen?.tiempoCocinaPromedio?.diferenciaPorcentaje || 0) <= 0 ? 'var(--p-success-700)' : 'var(--p-danger-700)'
+            }">
+        <i class="pi mr-1" [ngClass]="(resumen?.tiempoCocinaPromedio?.diferenciaPorcentaje || 0) <= 0 ? 'pi-arrow-down' : 'pi-arrow-up'"></i>
+        <span>{{ abs(resumen?.tiempoCocinaPromedio?.diferenciaPorcentaje || 0) }}% vs ayer</span>
+      </span>
+    </div>
+    <div class="stat-icon-container cook">
+      <i class="pi pi-clock text-xl"></i>
+    </div>
+  </div>
+
+</div>

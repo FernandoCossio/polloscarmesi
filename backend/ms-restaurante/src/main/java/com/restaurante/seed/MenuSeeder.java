@@ -9,6 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -25,68 +26,70 @@ public class MenuSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (categoriaRepository.count() == 0) {
-            // Seeding Categoria
-            Categoria pollos = new Categoria();
-            pollos.setNombre("Pollos");
-            pollos.setDescripcion("Deliciosos pollos a la brasa con el sabor único de la casa");
-            pollos.setIcon("lunch_dining");
-            pollos = categoriaRepository.save(pollos);
+        Categoria pollos = upsertCategoria("Pollos", "Deliciosos pollos a la brasa con el sabor único de la casa", "lunch_dining");
+        Categoria combos = upsertCategoria("Combos", "Combos para compartir con gaseosa o guarnición", "restaurant_menu");
+        Categoria bebidas = upsertCategoria("Bebidas", "Bebidas y refrescos para acompañar tu comida", "emoji_food_beverage");
+        Categoria guarniciones = upsertCategoria("Guarniciones", "Acompañamientos perfectos para tu pollo", "restaurant");
+        Categoria postres = upsertCategoria("Postres", "Dulces para cerrar con broche de oro", "icecream");
 
-            Categoria bebidas = new Categoria();
-            bebidas.setNombre("Bebidas");
-            bebidas.setDescripcion("Bebidas y refrescos para acompañar tu comida");
-            bebidas.setIcon("emoji_food_beverage");
-            bebidas = categoriaRepository.save(bebidas);
+        List<ProductoSeed> seeds = new ArrayList<>();
+        seeds.add(new ProductoSeed("1/4 de Pollo a la Brasa", "Clásico pollo a la brasa con papas y ensalada", new BigDecimal("22.50"), pollos));
+        seeds.add(new ProductoSeed("1/2 Pollo a la Brasa", "Medio pollo con papas, ensalada y cremas de la casa", new BigDecimal("39.90"), pollos));
+        seeds.add(new ProductoSeed("Pollo Entero a la Brasa", "Pollo entero jugoso, acompañado de papas fritas y cremas de la casa", new BigDecimal("78.00"), pollos));
+        seeds.add(new ProductoSeed("Broaster (2 piezas)", "Pollo broaster crocante con papas y ensalada", new BigDecimal("19.90"), pollos));
+        seeds.add(new ProductoSeed("Alitas BBQ (8 unidades)", "Alitas bañadas en salsa BBQ con porción de papas", new BigDecimal("24.90"), pollos));
 
-            Categoria guarniciones = new Categoria();
-            guarniciones.setNombre("Guarniciones");
-            guarniciones.setDescripcion("Acompañamientos perfectos para tu pollo");
-            guarniciones.setIcon("restaurant");
-            guarniciones = categoriaRepository.save(guarniciones);
+        seeds.add(new ProductoSeed("Combo Familiar (Pollo entero + gaseosa 1.5L)", "Ideal para 4 personas", new BigDecimal("89.90"), combos));
+        seeds.add(new ProductoSeed("Combo Pareja (1/2 pollo + 2 bebidas)", "Perfecto para compartir", new BigDecimal("49.90"), combos));
+        seeds.add(new ProductoSeed("Combo Ejecutivo (1/4 pollo + bebida)", "Rápido y contundente", new BigDecimal("28.90"), combos));
+        seeds.add(new ProductoSeed("Combo Broaster (2 piezas + bebida)", "Crocante y sabroso", new BigDecimal("24.90"), combos));
 
-            // Seeding Productos
-            Producto pollo1 = new Producto();
-            pollo1.setNombre("1/4 de Pollo a la Brasa");
-            pollo1.setDescripcion("Clásico pollo a la brasa con papas y ensalada");
-            pollo1.setPrecio(new BigDecimal("22.50"));
-            pollo1.setCategoria(pollos);
-            pollo1.setDisponible(true);
-            productoRepository.save(pollo1);
+        seeds.add(new ProductoSeed("Chicha Morada 1L", "Refrescante chicha morada natural de maíz morado", new BigDecimal("12.00"), bebidas));
+        seeds.add(new ProductoSeed("Limonada 1L", "Limonada natural con hierbabuena", new BigDecimal("12.00"), bebidas));
+        seeds.add(new ProductoSeed("Gaseosa Inka Kola 1.5L", "Gaseosa helada en botella no retornable", new BigDecimal("9.50"), bebidas));
+        seeds.add(new ProductoSeed("Gaseosa Coca Cola 1.5L", "Gaseosa helada en botella no retornable", new BigDecimal("9.50"), bebidas));
+        seeds.add(new ProductoSeed("Agua Sin Gas 500ml", "Agua mineral sin gas", new BigDecimal("3.50"), bebidas));
 
-            Producto pollo2 = new Producto();
-            pollo2.setNombre("Pollo Entero a la Brasa");
-            pollo2.setDescripcion("Pollo entero jugoso, acompañado de papas fritas y cremas de la casa");
-            pollo2.setPrecio(new BigDecimal("78.00"));
-            pollo2.setCategoria(pollos);
-            pollo2.setDisponible(true);
-            productoRepository.save(pollo2);
+        seeds.add(new ProductoSeed("Papas Fritas Familiares", "Porción de papas fritas crujientes doradas", new BigDecimal("15.00"), guarniciones));
+        seeds.add(new ProductoSeed("Papas Fritas Personales", "Porción personal de papas fritas", new BigDecimal("7.50"), guarniciones));
+        seeds.add(new ProductoSeed("Ensalada Criolla", "Cebolla, tomate y limón", new BigDecimal("6.00"), guarniciones));
+        seeds.add(new ProductoSeed("Arroz Chaufa", "Chaufa al estilo casero", new BigDecimal("12.90"), guarniciones));
+        seeds.add(new ProductoSeed("Tequeños (6 unidades)", "Tequeños con salsa de la casa", new BigDecimal("14.90"), guarniciones));
 
-            Producto bebida1 = new Producto();
-            bebida1.setNombre("Chicha Morada 1L");
-            bebida1.setDescripcion("Refrescante chicha morada natural de maíz morado");
-            bebida1.setPrecio(new BigDecimal("12.00"));
-            bebida1.setCategoria(bebidas);
-            bebida1.setDisponible(true);
-            productoRepository.save(bebida1);
+        seeds.add(new ProductoSeed("Mazamorra Morada", "Postre tradicional peruano", new BigDecimal("7.00"), postres));
+        seeds.add(new ProductoSeed("Arroz con Leche", "Arroz con leche cremoso con canela", new BigDecimal("7.00"), postres));
+        seeds.add(new ProductoSeed("Suspiro Limeño", "Clásico suspiro limeño", new BigDecimal("9.90"), postres));
 
-            Producto bebida2 = new Producto();
-            bebida2.setNombre("Gaseosa Inka Kola 1.5L");
-            bebida2.setDescripcion("Gaseosa helada en botella no retornable");
-            bebida2.setPrecio(new BigDecimal("9.50"));
-            bebida2.setCategoria(bebidas);
-            bebida2.setDisponible(true);
-            productoRepository.save(bebida2);
-
-            Producto guarnicion1 = new Producto();
-            guarnicion1.setNombre("Papas Fritas Familiares");
-            guarnicion1.setDescripcion("Poción de papas fritas crujientes doradas");
-            guarnicion1.setPrecio(new BigDecimal("15.00"));
-            guarnicion1.setCategoria(guarniciones);
-            guarnicion1.setDisponible(true);
-            productoRepository.save(guarnicion1);
-
-            System.out.println("Seeder: Menú inicial y productos cargados exitosamente.");
+        int created = 0;
+        for (ProductoSeed seed : seeds) {
+            if (!productoRepository.existsByNombre(seed.nombre())) {
+                Producto producto = new Producto();
+                producto.setNombre(seed.nombre());
+                producto.setDescripcion(seed.descripcion());
+                producto.setPrecio(seed.precio());
+                producto.setCategoria(seed.categoria());
+                producto.setDisponible(true);
+                productoRepository.save(producto);
+                created++;
+            }
         }
+
+        long total = productoRepository.count();
+        if (created > 0) {
+            System.out.println("Seeder: Productos creados: " + created + ". Total productos en BD: " + total);
+        }
+    }
+
+    private Categoria upsertCategoria(String nombre, String descripcion, String icon) {
+        return categoriaRepository.findByNombre(nombre).orElseGet(() -> {
+            Categoria categoria = new Categoria();
+            categoria.setNombre(nombre);
+            categoria.setDescripcion(descripcion);
+            categoria.setIcon(icon);
+            return categoriaRepository.save(categoria);
+        });
+    }
+
+    private record ProductoSeed(String nombre, String descripcion, BigDecimal precio, Categoria categoria) {
     }
 }

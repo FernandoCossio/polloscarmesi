@@ -73,8 +73,12 @@
 </head>
 <body>
     <div class="header">
-        <h1>Pollos Carmesí</h1>
-        <p>RUC: 10456789123<br/>Av. Principal 123, Cusco<br/>Teléfono: 084-234567</p>
+        <h1 th:text="${configuracion.nombreRestaurante}">Pollos Carmesí</h1>
+        <p>
+            <span th:text="${'NIT: ' + configuracion.ruc}">NIT: 10456789123</span><br/>
+            <span th:text="${configuracion.direccion}">Av. Principal 123, Cusco</span><br/>
+            <span th:text="${'Teléfono: ' + configuracion.telefono}">Teléfono: 084-234567</span>
+        </p>
     </div>
 
     <div class="info">
