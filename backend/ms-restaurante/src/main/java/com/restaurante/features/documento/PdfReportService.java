@@ -15,7 +15,7 @@ import com.restaurante.features.configuracion.ConfiguracionService;
 import com.restaurante.features.pago.PagoRepository;
 import com.restaurante.features.pago.PagoSpecifications;
 import com.restaurante.features.pedido.DetallePedidoRepository;
-import com.restaurante.services.ImageStorageService;
+import com.restaurante.services.StorageService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -38,7 +38,7 @@ public class PdfReportService {
     private final PagoRepository pagoRepository;
     private final DetallePedidoRepository detallePedidoRepository;
     private final DocumentoRepository documentoRepository;
-    private final ImageStorageService imageStorageService;
+    private final StorageService storageService;
     private final TemplateEngine templateEngine;
     private final ConfiguracionService configuracionService;
 
@@ -46,14 +46,14 @@ public class PdfReportService {
             PagoRepository pagoRepository,
             DetallePedidoRepository detallePedidoRepository,
             DocumentoRepository documentoRepository,
-            ImageStorageService imageStorageService,
+            StorageService storageService,
             TemplateEngine templateEngine,
             ConfiguracionService configuracionService
     ) {
         this.pagoRepository = pagoRepository;
         this.detallePedidoRepository = detallePedidoRepository;
         this.documentoRepository = documentoRepository;
-        this.imageStorageService = imageStorageService;
+        this.storageService = storageService;
         this.templateEngine = templateEngine;
         this.configuracionService = configuracionService;
     }
@@ -196,7 +196,7 @@ public class PdfReportService {
         String hashHex = hexString.toString();
 
         ByteArrayMultipartFile file = new ByteArrayMultipartFile(pdfBytes, "file", fileName, "application/pdf");
-        String fileUrl = imageStorageService.store(file, s3Key);
+        String fileUrl = storageService.store(file, s3Key);
 
         Documento doc = new Documento();
         doc.setNombre(reportName);
@@ -206,6 +206,6 @@ public class PdfReportService {
         doc.setHash(hashHex);
         documentoRepository.save(doc);
 
-        return imageStorageService.generatePresignedUrl(s3Key);
+        return storageService.generatePresignedUrl(s3Key);
     }
 }
