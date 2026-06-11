@@ -1,4 +1,5 @@
 import { GATEWAY_URL, AuthService } from './auth-service';
+import { Platform } from 'react-native';
 
 export interface Categoria {
   id: string;
@@ -495,10 +496,21 @@ export const RestaurantService = {
       formData.append('pedidoId', pedidoId);
 
       if (imageUri) {
-        const uriParts = imageUri.split('.');
+        let cleanUri = imageUri;
+        if (Platform.OS === 'android') {
+          try {
+            // Decode once to turn double-encoded characters into single-encoded
+            cleanUri = decodeURIComponent(imageUri);
+            // Strip 'file://' prefix to treat it as a raw local file path
+            cleanUri = cleanUri.replace('file://', '');
+          } catch (e) {
+            console.warn('Error cleaning image URI:', e);
+          }
+        }
+        const uriParts = cleanUri.split('.');
         const fileType = uriParts[uriParts.length - 1];
         formData.append('file', {
-          uri: imageUri,
+          uri: cleanUri,
           name: `evidence-${pedidoId}.${fileType}`,
           type: `image/${fileType === 'png' ? 'png' : 'jpeg'}`,
         } as any);

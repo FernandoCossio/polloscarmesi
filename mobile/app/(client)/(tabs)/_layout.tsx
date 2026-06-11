@@ -4,6 +4,7 @@ import { View, StyleSheet, Text } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useCart } from '../../../context/cart-context';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function TabLayout() {
   const { itemCount } = useCart();
@@ -21,6 +22,7 @@ export default function TabLayout() {
         },
         headerTintColor: '#fff',
         tabBarButton: HapticTab,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           height: 75,
           paddingBottom: 16,
@@ -58,6 +60,14 @@ export default function TabLayout() {
           title: 'Pedidos',
           headerTitle: 'Mis Pedidos',
           tabBarIcon: ({ color }) => <IconSymbol size={26} name="clock.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Asistente',
+          headerTitle: 'Asistente Carmesí',
+          tabBarIcon: ({ color }) => <MaterialIcons size={26} name="forum" color={color} />,
         }}
       />
       <Tabs.Screen
