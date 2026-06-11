@@ -30,6 +30,7 @@ public class UsuarioSeeder {
                 "admin",
                 "admin@restaurante.com",
                 "Administrador",
+                null,
                 RolNombre.ADMINISTRADOR
         ) ? 1 : 0;
 
@@ -37,6 +38,7 @@ public class UsuarioSeeder {
                 "cajero",
                 "cajero@restaurante.com",
                 "Usuario Cajero",
+                "59178945612",
                 RolNombre.CAJERO
         ) ? 1 : 0;
 
@@ -44,6 +46,7 @@ public class UsuarioSeeder {
                 "cocina",
                 "cocina@restaurante.com",
                 "Usuario Cocina",
+                null,
                 RolNombre.COCINA
         ) ? 1 : 0;
 
@@ -51,6 +54,7 @@ public class UsuarioSeeder {
                 "repartidor",
                 "repartidor@restaurante.com",
                 "Usuario Repartidor",
+                "59171355794",
                 RolNombre.REPARTIDOR
         ) ? 1 : 0;
 
@@ -58,6 +62,7 @@ public class UsuarioSeeder {
                 "cliente",
                 "cliente@restaurante.com",
                 "Usuario Cliente",
+                "59171234567",
                 RolNombre.CLIENTE
         ) ? 1 : 0;
 
@@ -71,6 +76,7 @@ public class UsuarioSeeder {
     private boolean crearUsuarioSiNoExiste(String username,
                                            String email,
                                            String nombreCompleto,
+                                           String telefono,
                                            RolNombre rolNombre) {
         if (usuarioRepository.findByUsernameIgnoreCase(username).isPresent()) {
             log.info("[Seeder][Usuario] '{}' ya existe, omitiendo", username);
@@ -86,6 +92,7 @@ public class UsuarioSeeder {
                 nombreCompleto,
                 "123123",
                 true,
+                telefono,
                 Set.of(rol)
         );
 
@@ -99,6 +106,7 @@ public class UsuarioSeeder {
                                      String nombreCompleto,
                                      String passwordPlano,
                                      boolean activo,
+                                     String telefono,
                                      Set<Rol> roles) {
         Usuario usuario = new Usuario();
         usuario.setUsername(username);
@@ -106,6 +114,7 @@ public class UsuarioSeeder {
         usuario.setNombreCompleto(nombreCompleto);
         usuario.setPassword(passwordEncoder.encode(passwordPlano));
         usuario.setActivo(activo);
+        usuario.setTelefono(telefono);
         usuario.setRoles(roles);
         return usuario;
     }
