@@ -1,0 +1,40 @@
+<div class="filters-card">
+  <div class="filters-header">
+    <i class="pi pi-filter"></i>
+    <span>Filtros de Búsqueda</span>
+  </div>
+
+  <div class="filters-grid">
+    <!-- Fecha Inicio -->
+    <div class="filter-field">
+      <label>Fecha Inicio</label>
+      <p-datePicker [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Fecha Fin -->
+    <div class="filter-field">
+      <label>Fecha Fin</label>
+      <p-datePicker [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-datePicker>
+    </div>
+
+    <!-- Límite / Top N -->
+    <div class="filter-field">
+      <div class="label-with-tooltip">
+        <label>Top N productos</label>
+        <i class="pi pi-question-circle tooltip-icon" [pTooltip]="'Número de productos a incluir en el ranking'" tooltipPosition="top"></i>
+      </div>
+      <input pInputText type="number" [(ngModel)]="limite" class="w-full" />
+    </div>
+  </div>
+
+  <div class="filters-actions">
+    <span class="actions-note">
+      Nota: La generación del reporte en PDF puede tardar unos segundos dependiendo del volumen de datos.
+    </span>
+    <div class="actions-buttons">
+      <button pButton label="Buscar" icon="pi pi-search" [loading]="loading" class="p-button-primary" (click)="onBuscar()"></button>
+      <button pButton label="Exportar Excel" icon="pi pi-file-excel" class="p-button-outlined p-button-success" (click)="onExportExcel()"></button>
+      <button pButton label="Exportar PDF" icon="pi pi-file-pdf" class="p-button-outlined p-button-danger" (click)="onExportPdf()"></button>
+    </div>
+  </div>
+</div>

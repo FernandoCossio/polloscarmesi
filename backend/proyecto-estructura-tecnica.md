@@ -188,7 +188,7 @@ MS1 (Spring Boot — Gestión Restaurante)
  ├── valida JWT usando clave pública de MS4 (OAuth2 Resource Server)
  ├── consulta a MS2 via REST interno (estado de pedidos delivery)
  ├── consulta a MS3 via REST interno (resultado análisis de comprobante, tiempo estimado)
- ├── publica eventos a Redis (pedido.creado, pago.registrado)
+ ├── publica eventos a Redis (pedido.presencial.creado, pago.registrado)
  └── llama al smart contract via web3j (registro de hash de documentos)
 
 MS2 (NestJS — Pedidos y Delivery)
@@ -196,7 +196,7 @@ MS2 (NestJS — Pedidos y Delivery)
  ├── valida JWT usando clave pública de MS4
  ├── consulta a MS1 via REST interno (datos del pedido, productos)
  ├── consulta a MS3 via REST interno (tiempo estimado de preparación)
- ├── publica eventos a Redis (delivery.estado, entrega.confirmada)
+ ├── publica eventos a Redis (pedido.delivery.creado, delivery.estado, entrega.confirmada)
  ├── escribe eventos y telemetría GPS en DynamoDB
  └── expone endpoint REST interno para n8n (cierre de caja)
 
@@ -258,7 +258,8 @@ Casos de uso de Redis Pub/Sub en el sistema:
 
 | Canal (Topic) | Publicador | Suscriptor | Descripción |
 |---|---|---|---|
-| `pedido.creado` | MS1 | MS2, MS3 | Notifica que un nuevo pedido fue registrado. MS2 lo asigna si es delivery; MS3 inicia estimación de tiempo. |
+| `pedido.presencial.creado` | MS1 | MS3 | Notifica que un nuevo pedido presencial fue registrado. MS3 inicia estimación de tiempo de preparación. |
+| `pedido.delivery.creado` | MS2 | MS1, MS3 | Notifica que un nuevo pedido delivery fue registrado. MS1 sincroniza el pedido en su dominio; MS3 inicia estimación de tiempo. |
 | `pago.registrado` | MS1 | MS3 | Notifica que un pago fue registrado para iniciar análisis del comprobante. |
 | `comprobante.analizado` | MS3 | MS1 | Devuelve el resultado del análisis visual del comprobante (aceptado, rechazado, revisión manual). |
 | `tiempo.estimado` | MS3 | MS1, MS2 | Devuelve el tiempo estimado de preparación del pedido. |
@@ -313,8 +314,8 @@ Los siguientes flujos involucran múltiples microservicios y representan los esc
 
 1. El Cajero registra el pedido en Angular → mutation GraphQL a MS0.
 2. MS0 valida JWT (rol: Cajero), verifica permiso de la operación y delega la mutation a MS1 via Schema Stitching.
-3. MS1 crea el pedido en PostgreSQL y publica evento `pedido.creado` en Redis.
-4. MS3 suscrito a `pedido.creado` inicia estimación de tiempo y publica `tiempo.estimado` en Redis.
+3. MS1 crea el pedido en PostgreSQL y publica evento `pedido.presencial.creado` en Redis.
+4. MS3 suscrito a `pedido.presencial.creado` inicia estimación de tiempo y publica `tiempo.estimado` en Redis.
 5. MS1 recibe `tiempo.estimado` y lo asocia al pedido.
 6. El Cajero registra el pago y sube el comprobante → mutation GraphQL a MS0 → MS1.
 7. MS1 guarda el comprobante en S3 y publica evento `pago.registrado` en Redis.
@@ -329,9 +330,9 @@ Los siguientes flujos involucran múltiples microservicios y representan los esc
 
 1. El Cliente arma su pedido en React Native (o por voz via Speech-to-Text) → mutation GraphQL a MS0.
 2. MS0 valida JWT (rol: Cliente), verifica permiso y delega la mutation a MS2 via Schema Stitching.
-3. MS2 crea el pedido delivery en PostgreSQL y publica `pedido.creado` en Redis.
-4. MS1 suscrito a `pedido.creado` notifica a MS2 via REST para confirmar registro en su dominio transaccional.
-5. MS3 suscrito a `pedido.creado` estima el tiempo de preparación y publica `tiempo.estimado`.
+3. MS2 crea el pedido delivery en PostgreSQL y publica `pedido.delivery.creado` en Redis.
+4. MS1 suscrito a `pedido.delivery.creado` sincroniza el pedido en su dominio transaccional.
+5. MS3 suscrito a `pedido.delivery.creado` estima el tiempo de preparación y publica `tiempo.estimado`.
 6. MS2 asigna un repartidor disponible y envía notificación push via Expo Notifications.
 7. El repartidor confirma el pedido en la app → mutation GraphQL a MS0 → MS2.
 8. MS2 actualiza el estado y registra el punto clave GPS en DynamoDB.
@@ -349,9 +350,10 @@ Los siguientes flujos involucran múltiples microservicios y representan los esc
 3. MS2 consulta a MS1 via REST interno el resumen de ventas presenciales del día.
 4. MS2 consolida el resumen delivery desde su propia PostgreSQL.
 5. MS2 genera el reporte PDF y lo almacena en S3.
-6. MS2 devuelve la URL del reporte a n8n.
-7. n8n envía el reporte por correo al Administrador via Resend.
-8. n8n registra el evento de cierre en DynamoDB.
+6. MS2 notifica a MS1 via REST interno para registrar el hash del PDF en blockchain.
+7. MS2 devuelve la URL del reporte a n8n.
+8. n8n envía el reporte por correo al Administrador via Resend.
+9. n8n registra el evento de cierre en DynamoDB.
 
 ---
 
@@ -893,7 +895,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 - Calcular subtotal y total del pedido.
 - Consultar pedidos activos del turno actual.
 - Cancelar pedido presencial con motivo.
-- Publicar evento `pedido.creado` en Redis al crear un pedido.
+- Publicar evento `pedido.presencial.creado` en Redis al crear un pedido.
 - Consultar tiempo estimado de preparación (recibido via evento Redis desde MS3).
 
 **Módulo de Pagos**
@@ -1082,7 +1084,7 @@ Todos los endpoints validan el JWT emitido por MS4 via OAuth2 Resource Server.
 
 | Acción | Canal Redis | Tipo | Payload principal |
 |---|---|---|---|
-| **Publica** | `pedido.creado` | Publicador | `pedidoId`, `tipo`, `productos`, `clienteId` |
+| **Publica** | `pedido.presencial.creado` | Publicador | `pedidoId`, `tipo: PRESENCIAL`, `productos`, `clienteId` |
 | **Publica** | `pago.registrado` | Publicador | `pedidoId`, `pagoId`, `comprobanteUrl` |
 | **Consume** | `comprobante.analizado` | Suscriptor | `pagoId`, `resultado` (ACEPTADO/RECHAZADO/REVISION) |
 | **Consume** | `tiempo.estimado` | Suscriptor | `pedidoId`, `tiempoEstimadoMinutos` |
@@ -1164,7 +1166,7 @@ MS2 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 - Recibir y registrar nuevo pedido delivery desde el Cliente (via MS0).
 - Consultar datos del cliente y productos desde MS1 via GraphQL para completar el pedido.
 - Calcular subtotal y total del pedido.
-- Publicar evento `pedido.creado` en Redis al registrar el pedido.
+- Publicar evento `pedido.delivery.creado` en Redis al registrar el pedido.
 - Consultar y actualizar el estado del pedido durante su ciclo de vida.
 - Cancelar pedido con motivo antes de que sea asignado a un repartidor.
 - Registrar evento de trazabilidad en DynamoDB en cada cambio de estado.
@@ -1425,10 +1427,10 @@ n8n orquesta el flujo nocturno de cierre de caja de forma completamente automát
 
 | Acción | Canal Redis | Tipo | Payload principal |
 |---|---|---|---|
-| **Publica** | `pedido.creado` | Publicador | `pedidoId`, `tipo: DELIVERY`, `clienteId`, `productos`, `coordenadasEntrega` |
+| **Publica** | `pedido.delivery.creado` | Publicador | `pedidoId`, `tipo: DELIVERY`, `clienteId`, `productos`, `coordenadasEntrega` |
 | **Publica** | `delivery.estado` | Publicador | `pedidoId`, `nuevoEstado`, `timestamp` |
 | **Publica** | `entrega.confirmada` | Publicador | `pedidoId`, `repartidorId`, `evidenciaUrl`, `timestamp` |
-| **Consume** | `tiempo.estimado` | Suscriptor | `pedidoId`, `tiempoEstimadoMinutos` |
+| **Consume** | `tiempo.estimado` | Suscriptor | `pedidoId`, `tiempoEstimadoMinutos` — solo para pedidos delivery |
 | **Consume** | `comprobante.analizado` | Suscriptor | `pedidoId`, `resultado` |
 
 ---
@@ -1493,7 +1495,7 @@ MS3 no gestiona datos transaccionales del negocio. Consume datos de MS1 y MS2 vi
 | Almacenamiento | Uso |
 |---|---|
 | PostgreSQL | Resultados de inferencia del modelo CNN, predicciones de tiempo de preparación, segmentos K-Means por cliente e indicadores BI precalculados. |
-| Redis | Canal Pub/Sub para consumir eventos de pagos (`pago.registrado`, `pedido.creado`) y publicar resultados de inferencia (`comprobante.analizado`, `tiempo.estimado`). |
+| Redis | Canal Pub/Sub para consumir eventos (`pago.registrado`, `pedido.presencial.creado`, `pedido.delivery.creado`) y publicar resultados de inferencia (`comprobante.analizado`, `tiempo.estimado`). |
 
 ---
 
@@ -1509,7 +1511,7 @@ Los cuatro módulos de MS3 son independientes entre sí y comparten únicamente 
 Clasifica imágenes de comprobantes de pago bolivianos (QR, transferencias bancarias, depósitos) como válidos o inválidos usando un modelo CNN preentrenado con TensorFlow/Keras. El modelo fue entrenado offline con un dataset de comprobantes bolivianos y se carga desde un archivo `.h5` al iniciar MS3.
 
 **Ciclo de inferencia:**
-1. MS3 consume el evento `pago.registrado` desde Redis con la URL del comprobante en S3.
+1. MS3 consume el evento `pago.registrado` desde Redis con la URL del comprobante en S3 (sin cambios).
 2. MS3 descarga la imagen desde S3 y la preprocesa (redimensión, normalización).
 3. El modelo CNN clasifica la imagen y retorna un score de confianza (0.0 - 1.0).
 4. Lógica de decisión según el score:
@@ -1535,11 +1537,11 @@ Clasifica imágenes de comprobantes de pago bolivianos (QR, transferencias banca
 Predice el tiempo de preparación en minutos de un pedido usando un modelo Random Forest Regressor entrenado con datos históricos del restaurante. El modelo aprende de variables como cantidad de productos, categorías, horario del día y carga actual de cocina.
 
 **Ciclo de predicción:**
-1. MS3 consume el evento `pedido.creado` desde Redis.
+1. MS3 consume los eventos `pedido.presencial.creado` (de MS1) y `pedido.delivery.creado` (de MS2) desde Redis.
 2. MS3 extrae las features del pedido: cantidad total de ítems, categorías de productos, hora del día, día de la semana y número de pedidos activos en cocina en ese momento.
 3. El modelo Random Forest predice el tiempo de preparación en minutos.
 4. MS3 persiste la predicción en PostgreSQL con `pedidoId`, `tiempoPredichoMinutos` y `featuresUsadas`.
-5. MS3 publica el evento `tiempo.estimado` en Redis hacia MS1 y MS2.
+5. MS3 publica el evento `tiempo.estimado` en Redis hacia MS1 (si fue `pedido.presencial.creado`) o MS1 y MS2 (si fue `pedido.delivery.creado`).
 
 **Ciclo de entrenamiento:**
 - El modelo se entrena offline con datos históricos exportados desde PostgreSQL de MS1.
@@ -1549,7 +1551,7 @@ Predice el tiempo de preparación en minutos de un pedido usando un modelo Rando
 
 **Casos de uso:**
 - Cargar modelo Random Forest `.pkl` al iniciar el servicio.
-- Extraer y construir el vector de features desde el payload del evento `pedido.creado`.
+- Extraer y construir el vector de features desde el payload del evento (`pedido.presencial.creado` o `pedido.delivery.creado`).
 - Consultar a MS1 via GraphQL la carga actual de cocina (pedidos en estado `EN_PREPARACION`).
 - Ejecutar predicción y persistir resultado en PostgreSQL.
 - Publicar tiempo estimado via Redis hacia MS1 y MS2.
@@ -1772,7 +1774,8 @@ enum ResultadoAnalisis {
 | Acción | Canal Redis | Tipo | Payload principal |
 |---|---|---|---|
 | **Consume** | `pago.registrado` | Suscriptor | `pagoId`, `comprobanteUrl` — dispara inferencia CNN |
-| **Consume** | `pedido.creado` | Suscriptor | `pedidoId`, `productos`, `cantidadItems`, `hora` — dispara predicción RF |
+| **Consume** | `pedido.presencial.creado` | Suscriptor | `pedidoId`, `productos`, `cantidadItems`, `hora` — dispara predicción RF |
+| **Consume** | `pedido.delivery.creado` | Suscriptor | `pedidoId`, `productos`, `cantidadItems`, `hora`, `coordenadasEntrega` — dispara predicción RF |
 | **Publica** | `comprobante.analizado` | Publicador | `pagoId`, `resultado`, `scoreConfianza` |
 | **Publica** | `tiempo.estimado` | Publicador | `pedidoId`, `tiempoPredichoMinutos` |
 
@@ -2147,7 +2150,7 @@ BlockchainService.java (MS1)
 
 **Flujo 2 — Registro de cierre de caja:**
 1. n8n genera el reporte PDF de cierre de caja y lo sube a S3 via MS2.
-2. MS2 notifica a MS1 via Redis con la URL del PDF y su contenido en bytes.
+2. MS2 llama a MS1 via REST interno (`POST /api/internal/registrar-documento`) con la URL del PDF en S3 y su contenido en bytes.
 3. MS1 calcula el hash SHA-256 del PDF.
 4. `BlockchainService` llama a `registrarDocumento(hash, "CIERRE_CAJA")` via web3j.
 5. MS1 persiste el `txHash` y los metadatos del documento en PostgreSQL.
@@ -2466,7 +2469,7 @@ Relaciones:
 ---
 
 **`pedidos`**
-Pedidos del restaurante. Unifica pedidos presenciales y delivery bajo un mismo dominio en MS1. Los pedidos delivery son creados en MS2 y sincronizados a MS1 via evento Redis.
+Pedidos del restaurante. Unifica pedidos presenciales y delivery bajo un mismo dominio en MS1. Los pedidos delivery son creados en MS2 y sincronizados a MS1 via evento Redis `pedido.delivery.creado`.
 
 Relaciones:
 - Tiene un tipo: enum `PRESENCIAL | DELIVERY`.

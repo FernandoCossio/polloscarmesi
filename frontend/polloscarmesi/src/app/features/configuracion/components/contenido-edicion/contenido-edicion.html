@@ -1,0 +1,130 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form flex flex-col gap-6">
+  
+  <!-- Seccion 1: Datos del Restaurante -->
+  <div class="config-section-card">
+    <div class="section-header">
+      <i class="pi pi-shop header-icon"></i>
+      <h3>Datos del Restaurante</h3>
+    </div>
+
+    <div class="fields-grid flex flex-col gap-4">
+      <!-- Nombre del Restaurante -->
+      <div class="field-item">
+        <label for="nombreRestaurante">Nombre del Restaurante</label>
+        <input pInputText id="nombreRestaurante" formControlName="nombreRestaurante" placeholder="Ej: Pollos Carmesí" class="w-full" />
+        <span *ngIf="form.get('nombreRestaurante')?.touched && form.get('nombreRestaurante')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+          El nombre del restaurante es obligatorio
+        </span>
+      </div>
+
+      <!-- RUC y Telefono Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="field-item">
+          <label for="ruc">RUC</label>
+          <input pInputText id="ruc" formControlName="ruc" placeholder="Ej: 10456789123" class="w-full" />
+          <span *ngIf="form.get('ruc')?.touched && form.get('ruc')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            El RUC es obligatorio
+          </span>
+        </div>
+
+        <div class="field-item">
+          <label for="telefono">Teléfono</label>
+          <input pInputText id="telefono" formControlName="telefono" placeholder="Ej: 084-234567" class="w-full" />
+          <span *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            El teléfono es obligatorio
+          </span>
+        </div>
+      </div>
+
+      <!-- Coordenadas y Direccion Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="field-item">
+          <label for="coordenadas">Coordenadas</label>
+          <input pInputText id="coordenadas" formControlName="coordenadas" readonly placeholder="Haga clic en el mapa..." class="w-full bg-surface-50 dark:bg-surface-950 cursor-not-allowed" />
+          <span *ngIf="form.get('coordenadas')?.touched && form.get('coordenadas')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            Las coordenadas son obligatorias (haga clic en el mapa)
+          </span>
+        </div>
+
+        <div class="field-item">
+          <label for="direccion">Dirección</label>
+          <input pInputText id="direccion" formControlName="direccion" placeholder="Ej: Av. Principal 123, Cusco" class="w-full" />
+          <span *ngIf="form.get('direccion')?.touched && form.get('direccion')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            La dirección es obligatoria
+          </span>
+        </div>
+      </div>
+
+      <!-- Mapa para Seleccionar Ubicación -->
+      <div class="field-item">
+        <label>Ubicación en el Mapa</label>
+        <div id="config-map" class="w-full"></div>
+        <span class="helper-text text-surface-500 dark:text-surface-400 text-xs">
+          Haga clic en el mapa o arrastre el marcador para auto-completar las coordenadas y la dirección.
+        </span>
+      </div>
+
+      <!-- Horario de Atencion -->
+      <div class="field-item">
+        <label for="horarioAtencion">Horario de Atención</label>
+        <input pInputText id="horarioAtencion" formControlName="horarioAtencion" placeholder="Ej: Lunes a Domingo 11:00 - 22:00" class="w-full" />
+        <span class="helper-text text-surface-500 dark:text-surface-400 text-xs mt-1">
+          Texto libre que se mostrará en recibos y documentos
+        </span>
+        <span *ngIf="form.get('horarioAtencion')?.touched && form.get('horarioAtencion')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+          El horario de atención es obligatorio
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seccion 2: Parametros del Sistema -->
+  <div class="config-section-card">
+    <div class="section-header">
+      <i class="pi pi-sliders-h header-icon"></i>
+      <h3>Parámetros del Sistema</h3>
+    </div>
+
+    <div class="fields-grid flex flex-col gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Tiempo Maximo de Preparacion -->
+        <div class="field-item">
+          <label for="tiempoMaximoPreparacion">Tiempo Máximo de Preparación</label>
+          <p-inputNumber id="tiempoMaximoPreparacion" formControlName="tiempoMaximoPreparacion" suffix=" min" [min]="1" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+          <span *ngIf="form.get('tiempoMaximoPreparacion')?.touched && form.get('tiempoMaximoPreparacion')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            El tiempo de preparación es obligatorio
+          </span>
+        </div>
+
+        <!-- Umbral de Alerta de Cocina -->
+        <div class="field-item">
+          <label for="umbralAlertaCocina">Umbral de Alerta de Cocina</label>
+          <p-inputNumber id="umbralAlertaCocina" formControlName="umbralAlertaCocina" suffix=" min" [min]="1" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+          <span *ngIf="form.get('umbralAlertaCocina')?.touched && form.get('umbralAlertaCocina')?.invalid" class="validation-error text-red-500 text-xs mt-1">
+            El umbral de alerta es obligatorio
+          </span>
+        </div>
+      </div>
+
+      <!-- Info Alert Block -->
+      <div class="info-alert-block flex items-start gap-3 p-4 rounded-xl mt-2">
+        <i class="pi pi-info-circle info-icon mt-0.5"></i>
+        <p class="info-text m-0 text-sm leading-relaxed">
+          Estos valores afectan el comportamiento del panel de cocina en tiempo real, activando avisos visuales para pedidos que excedan los límites.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="actions-section flex flex-col items-center gap-4 mt-4">
+    <div class="buttons-row flex items-center justify-end w-full gap-4">
+      <button pButton type="button" label="Cancelar" class="p-button-text p-button-secondary" (click)="onCancel()"></button>
+      <button pButton type="submit" label="Guardar Cambios" icon="pi pi-check" [loading]="saving" [disabled]="form.invalid" class="p-button-primary px-5"></button>
+    </div>
+    <span class="disclaimer-text text-sm text-surface-500 dark:text-surface-400 italic">
+      Los cambios se aplican de inmediato en todos los módulos del sistema.
+    </span>
+  </div>
+
+</form>

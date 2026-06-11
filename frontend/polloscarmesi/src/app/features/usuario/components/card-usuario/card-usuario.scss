@@ -1,0 +1,46 @@
+.user-card-row {
+  background-color: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius-lg, 16px);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+
+  .avatar-container {
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  }
+
+  .edit-btn {
+    color: var(--p-text-muted-color);
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+      color: var(--p-text-color);
+    }
+  }
+
+  .toggle-btn {
+    font-size: 1.5rem;
+    padding: 0.25rem;
+    
+    &::ng-deep .p-button-icon {
+      font-size: 1.75rem !important;
+    }
+
+    &.active {
+      color: #8c4b2b;
+      .app-dark & {
+        color: var(--p-primary-color);
+      }
+    }
+
+    &.inactive {
+      color: var(--p-text-muted-color);
+    }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+.usuario-nombre{
+  margin: 0;
+}

@@ -1,0 +1,70 @@
+<div class="user-card-row flex items-center justify-between p-4 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl transition-all duration-300 hover:shadow-sm">
+  
+  <!-- Content Layout -->
+  <div class="flex items-center gap-4 flex-1 min-w-0">
+    <!-- Avatar Initials -->
+    <div 
+      class="avatar-container flex items-center justify-center w-14 h-14 rounded-xl overflow-hidden shrink-0 font-bold text-lg text-surface-700"
+      [style.background-color]="avatarBackground">
+      {{ initials }}
+    </div>
+
+    <!-- Details Grid -->
+    <div class="user-details-grid grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-w-0 items-center">
+      <!-- Name and Username -->
+      <div class="flex flex-col min-w-0">
+        <h4 class="usuario-nombre text-base font-bold text-surface-900 dark:text-surface-0 m-0 truncate">
+          {{ usuario.nombreCompleto }}
+        </h4>
+        <span class="text-sm text-surface-500 dark:text-surface-400 font-medium italic">
+          @{{ usuario.username }}
+        </span>
+      </div>
+
+      <!-- Contact details -->
+      <div class="flex flex-col gap-1 text-sm text-surface-600 dark:text-surface-300">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-envelope text-surface-400"></i>
+          <span class="truncate">{{ usuario.email }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-phone text-surface-400"></i>
+          <span>{{ usuario.telefono || 'Sin teléfono' }}</span>
+        </div>
+      </div>
+
+      <!-- Role Badge -->
+      <div class="flex items-center">
+        @for (role of usuario.roles; track role) {
+          <app-role-badge [role]="role"></app-role-badge>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side (Status & Actions) -->
+  <div class="flex items-center gap-4 pl-4 shrink-0 justify-end">
+    <!-- Estado Badge -->
+    <app-usuario-estado-badge [activo]="usuario.activo"></app-usuario-estado-badge>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2">
+      <button 
+        pButton 
+        type="button" 
+        icon="pi pi-pencil" 
+        class="p-button-text p-button-rounded p-button-sm edit-btn" 
+        (click)="onEdit($event)"
+        title="Editar">
+      </button>
+      <button 
+        pButton 
+        type="button" 
+        [icon]="usuario.activo ? 'pi pi-toggle-on' : 'pi pi-toggle-off'" 
+        [class]="usuario.activo ? 'p-button-text p-button-rounded p-button-sm toggle-btn active' : 'p-button-text p-button-rounded p-button-sm toggle-btn inactive'"
+        (click)="onToggleStatus($event)"
+        title="Cambiar Estado">
+      </button>
+    </div>
+  </div>
+</div>

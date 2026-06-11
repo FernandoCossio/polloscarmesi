@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,6 +10,8 @@ import { CommonModule } from '@angular/common';
 })
 export class SeccionComprobante {
   @Output() fileSelect = new EventEmitter<File | null>();
+
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   selectedFile: File | null = null;
   isDragging = false;
@@ -42,6 +44,9 @@ export class SeccionComprobante {
   removeFile(event: Event): void {
     event.stopPropagation();
     this.selectedFile = null;
+    if (this.fileInput?.nativeElement) {
+      this.fileInput.nativeElement.value = '';
+    }
     this.fileSelect.emit(null);
   }
 
@@ -53,6 +58,9 @@ export class SeccionComprobante {
       this.selectedFile = file;
       this.fileSelect.emit(file);
     } else {
+      if (this.fileInput?.nativeElement) {
+        this.fileInput.nativeElement.value = '';
+      }
       alert('Archivo no soportado o excede el límite de 5MB. Formatos válidos: JPG, PNG, PDF.');
     }
   }

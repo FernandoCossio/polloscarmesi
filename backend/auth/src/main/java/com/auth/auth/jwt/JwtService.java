@@ -48,4 +48,21 @@ public class JwtService {
 
 		return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
 	}
+
+	public String generateServiceToken(String serviceName) {
+		Instant now = Instant.now();
+		Instant expiresAt = now.plus(jwtSettings.accessTokenTtl());
+
+		JwtClaimsSet claims = JwtClaimsSet.builder()
+			.issuer(jwtSettings.issuer())
+			.issuedAt(now)
+			.expiresAt(expiresAt)
+			.subject(serviceName)
+			.claim("roles", List.of("ROLE_SYSTEM"))
+			.claim("token_type", "service")
+			.claim("service_name", serviceName)
+			.build();
+
+		return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+	}
 }

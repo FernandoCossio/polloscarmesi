@@ -4,7 +4,7 @@
 
 MS1 es el núcleo transaccional del sistema. Gestiona los dominios de negocio del restaurante: menú, pedidos presenciales, pagos, cocina, documentos y registro blockchain. La gestión de usuarios y autenticación se delega completamente a MS4.
 
-MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expone su propio schema GraphQL en `/graphql`. Se comunica con MS2 y MS3 via REST interno cuando necesita datos de sus dominios de forma síncrona. Publica y consume eventos en Redis para coordinación asíncrona. Interactúa con Amazon S3 para almacenamiento de documentos y con el smart contract Solidity via web3j para registro de hashes. La seguridad se basa en validación de tokens JWT emitidos por MS4.
+MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expone su propio schema GraphQL en `/graphql`. Se comunica con MS2 y MS3 via REST interno cuando necesita datos de sus dominios de forma síncrona. Publica y consume eventos en Redis para coordinación asíncrona. Interactúa con Amazon S3 para almacenamiento de documentos y con el smart contract Solidity via web3j para registro de hashes. La seguridad se basa en validación de tokens JWT emitidos por MS4 usando OAuth2 Resource Server con la clave pública RSA de MS4.
 
 **Ciclo de vida de pedidos gestionados por MS1:**
 
@@ -22,7 +22,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 | Base de datos | PostgreSQL via JDBC |
 | GraphQL servidor | Spring for GraphQL (`spring-boot-starter-graphql`) |
 | GraphQL cliente | No aplica — MS1 usa REST para llamadas inter-servicios a MS2 y MS3 |
-| Seguridad | Spring Security + OAuth2 Resource Server (validación JWT con clave pública de MS4) |
+| Seguridad | Spring Security + OAuth2 Resource Server (validación JWT con clave pública RSA de MS4) |
 | Almacenamiento S3 | AWS SDK for Java v2 (`software.amazon.awssdk`) |
 | Blockchain | web3j para interacción con smart contract Solidity |
 | Mensajería Redis | Spring Data Redis (`spring-boot-starter-data-redis`) |
@@ -37,7 +37,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 | Almacenamiento | Uso |
 |---|---|
 | PostgreSQL | Base de datos principal. Almacena menú, productos, pedidos, pagos, recibos y metadatos de documentos S3. |
-| Amazon S3 | Almacenamiento de archivos: comprobantes de pago, recibos generados y documentos administrativos. MS1 guarda solo la URL y metadatos en PostgreSQL. |
+| Amazon S3 | Almacenamiento de archivos: imágenes de productos, comprobantes de pago, recibos generados y documentos administrativos. MS1 guarda solo la URL y metadatos en PostgreSQL. |
 | Redis | Canal Pub/Sub para publicar y consumir eventos asincrónicos con MS2 y MS3. |
 
 ---
@@ -48,15 +48,15 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 - CRUD de categorías del menú (ej: Pollos, Bebidas, Guarniciones).
 - CRUD de productos: nombre, descripción, precio, categoría, imagen (URL S3) y disponibilidad.
 - Activar y desactivar disponibilidad de un producto en tiempo real.
-- Consultar menú completo con filtro por categoría (consumido por frontends y por MS2 via GraphQL).
-- Subir imagen de producto a S3 y guardar URL en PostgreSQL.
+- Consultar menú completo con filtro por categoría.
+- Recibir imagen de producto desde MS0 (proxy) y subirla a S3, guardando URL en PostgreSQL.
 
 **Módulo de Pedidos Presenciales**
 - Registrar nuevo pedido presencial con lista de productos, cantidades y número de ficha.
-- Calcular subtotal, descuentos y total del pedido.
+- Calcular subtotal y total del pedido.
 - Consultar pedidos activos del turno actual.
 - Cancelar pedido presencial con motivo.
-- Publicar evento `pedido.creado` en Redis al crear un pedido.
+- Publicar evento `pedido.presencial.creado` en Redis al crear un pedido.
 - Consultar tiempo estimado de preparación (recibido via evento Redis desde MS3).
 
 **Módulo de Pagos**
@@ -87,7 +87,7 @@ MS1 recibe operaciones GraphQL delegadas desde MS0 (via Schema Stitching) y expo
 
 #### 4.1.5 Estructura de Carpetas y Descripción de Capas
 
-La arquitectura sigue un patrón modular organizado por funcionalidades, con separación clara entre dominio, infraestructura y características de negocio.
+La arquitectura sigue un patrón modular organizado por funcionalidades con separación clara entre dominio, infraestructura y características de negocio.
 
 ```
 ms-restaurante/
@@ -95,21 +95,50 @@ ms-restaurante/
 │   └── main/
 │       ├── java/com/restaurante/
 │       │   ├── common/                        # Componentes comunes y utilidades
-│       │   │   ├── decorators/                # Decoradores y anotaciones personalizadas
-│       │   │   ├── errors/                    # Manejador global de excepciones y definiciones de errores
+│       │   │   ├── decorators/                # Anotaciones personalizadas (ej: @CurrentUserId)
+│       │   │   ├── errors/                    # Manejador global de excepciones y definición de errores
 │       │   │   └── response/                  # Wrappers de respuestas API estandarizadas
+│       │   │
 │       │   ├── config/                        # Configuración de Spring Boot
-│       │   │   ├── OpenApiConfig.java
-│       │   │   ├── SecurityConfig.java        # Configuración de seguridad con OAuth2 Resource Server
-│       │   │   └── WebConfig.java
-│       │   ├── domain/                        # Capa de dominio (modelos y DTOs)
-│       │   │   └── models/                    # Entidades JPA del dominio
-│       │   ├── services/                      # Servicios de infraestructura externos
-│       │   │   └── thumbnail/                 # Servicio de generación de thumbnails
+│       │   │   ├── OpenApiConfig.java         # Documentación Swagger
+│       │   │   ├── SecurityConfig.java        # OAuth2 Resource Server: valida JWT con clave pública MS4
+│       │   │   ├── RedisConfig.java           # Configuración de conexión Redis
+│       │   │   ├── S3Config.java              # Configuración del cliente AWS S3
+│       │   │   ├── Web3jConfig.java           # Configuración de conexión blockchain
+│       │   │   └── WebConfig.java             # Configuración CORS y web
+│       │   │
+│       │   ├── domain/                        # Capa de dominio
+│       │   │   └── models/                    # Entidades JPA: Categoria, Producto, Pedido,
+│       │   │                                  # DetallePedido, Pago, Recibo, Documento, Configuracion
+│       │   │
+│       │   ├── features/                      # Módulos de negocio organizados por funcionalidad
+│       │   │   ├── menu/                      # Controller, Service, Repository de Categoría y Producto
+│       │   │   ├── pedidos/                   # Controller, Service, Repository de Pedido y DetallePedido
+│       │   │   ├── pagos/                     # Controller, Service, Repository de Pago y Recibo
+│       │   │   ├── cocina/                    # Controller, Service de cola de cocina
+│       │   │   ├── blockchain/                # Controller, Service de documentos y blockchain (web3j)
+│       │   │   └── configuracion/             # Controller, Service, Repository de Configuracion
+│       │   │
+│       │   ├── graphql/                       # Capa GraphQL expuesta a MS0
+│       │   │   └── resolvers/                 # Resolvers GraphQL por módulo (menu, pedidos, pagos, cocina)
+│       │   │
+│       │   ├── infrastructure/                # Adaptadores de servicios externos
+│       │   │   ├── s3/                        # S3Service: upload, download, URLs firmadas
+│       │   │   ├── redis/                     # RedisPublisher, RedisSubscriber
+│       │   │   └── rest/                      # MS2RestClient, MS3RestClient (llamadas inter-servicios)
+│       │   │
+│       │   ├── services/
+│       │   │   └── thumbnail/                 # Servicio de generación de thumbnails para imágenes
+│       │   │
 │       │   └── RestauranteApplication.java    # Clase principal de Spring Boot
+│       │
 │       └── resources/
-│           ├── application.properties         # Configuración de la aplicación
-│           └── (graphql/schema.graphqls)      # (Por implementar) Schema GraphQL
+│           ├── application.yml                # Configuración base
+│           ├── application-prod.yml           # Configuración de producción
+│           ├── graphql/
+│           │   └── schema.graphqls            # Schema GraphQL expuesto por MS1
+│           └── certs/
+│               └── ms4-public.pem             # Clave pública RSA de MS4 para validar JWT
 │
 ├── .env
 ├── .env.example
@@ -117,20 +146,21 @@ ms-restaurante/
 └── mvnw / mvnw.cmd
 ```
 
-**Descripción de capas y módulos:**
+**Descripción de capas:**
 
-- **`common/`:** Componentes reutilizables: decoradores personalizados (ej: `@CurrentUserId`), manejador global de excepciones, y wrappers de respuestas API estandarizadas.
-- **`config/`:** Clases de configuración de Spring Boot: seguridad (validación de tokens JWT de MS4), OpenAPI (Swagger), y configuración web.
-- **`domain/`:** Capa de dominio central:
-  - **`models/`:** Entidades JPA que mapean las tablas de PostgreSQL.
-- **`services/`:** Adaptadores de servicios externos: generación de thumbnails.
-- **`resources/`:** Archivos de configuración (`application.properties`) y recursos estáticos.
+- **`common/`:** Decoradores personalizados (ej: `@CurrentUserId` para extraer el userId del JWT), manejador global de excepciones y wrappers de respuestas API estandarizadas.
+- **`config/`:** Clases de configuración Spring Boot. `SecurityConfig` configura OAuth2 Resource Server para validar JWT emitidos por MS4 usando su clave pública RSA.
+- **`domain/models/`:** Entidades JPA que mapean las tablas de PostgreSQL del dominio del restaurante.
+- **`features/`:** Módulos de negocio organizados por funcionalidad. Cada módulo contiene su Controller (REST + GraphQL resolver), Service (lógica de negocio) y Repository (acceso a datos JPA).
+- **`graphql/resolvers/`:** Resolvers GraphQL que exponen las operaciones de MS1 al Superschema de MS0.
+- **`infrastructure/`:** Adaptadores desacoplados para S3, Redis y clientes REST inter-servicios hacia MS2 y MS3.
+- **`services/thumbnail/`:** Servicio utilitario para generación de thumbnails de imágenes de productos.
 
 ---
 
-#### 4.1.6 Esquema GraphQL (Queries y Mutations expuestos a MS2 y MS3)
+#### 4.1.6 Esquema GraphQL (expuesto al frontend via MS0)
 
-MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0. Los tipos y operaciones aquí definidos son la fuente de verdad del dominio de gestión del restaurante.
+MS1 expone un endpoint GraphQL en `/graphql` consumido por MS0 via Schema Stitching. El frontend accede a estas operaciones a través del Superschema unificado de MS0.
 
 ```graphql
 type Query {
@@ -143,53 +173,50 @@ type Query {
   obtenerPedido(id: ID!): Pedido
   obtenerPedidosPorFecha(fecha: String!): [Pedido!]!
   obtenerPedidosHistoricos(clienteId: ID!, limit: Int): [Pedido!]!
+  obtenerColaCocina: [Pedido!]!
+
+  # Pagos y documentos
+  obtenerResultadoPago(pagoId: ID!): Pago
+  obtenerDocumentos: [Documento!]!
+  obtenerConfiguracion: Configuracion!
 }
 
 type Mutation {
-  # Pedidos (MS2 notifica sincronización de estado delivery)
+  # Menú
+  crearProducto(input: ProductoInput!): Producto!
+  editarProducto(id: ID!, input: ProductoInput!): Producto!
+  cambiarDisponibilidadProducto(id: ID!, disponible: Boolean!): Producto!
+
+  # Pedidos presenciales
+  crearPedido(input: PedidoInput!): Pedido!
+  cancelarPedido(id: ID!, motivo: String!): Pedido!
+
+  # Cocina
+  actualizarEstadoCocina(pedidoId: ID!, estado: EstadoPedido!): Pedido!
+
+  # Sincronización delivery (llamado internamente por MS2 via REST)
   sincronizarEstadoDelivery(pedidoId: ID!, estado: EstadoDelivery!): Pedido!
+
+  # Pagos
+  registrarPago(input: PagoInput!): Pago!
+
+  # Blockchain y documentos
+  registrarHashDocumento(documentoId: ID!, tipo: TipoDocumento!): String!
+  actualizarConfiguracion(input: ConfiguracionInput!): Configuracion!
 }
 
-type Producto {
-  id: ID!
-  nombre: String!
-  descripcion: String
-  precio: Float!
-  categoria: Categoria!
-  imagenUrl: String
-  disponible: Boolean!
-}
-
-type Categoria {
-  id: ID!
-  nombre: String!
-}
-
-type Pedido {
-  id: ID!
-  numerFicha: String
-  tipo: TipoPedido!
-  estado: String!
-  total: Float!
-  detalles: [DetallePedido!]!
-  fechaCreacion: String!
-}
-
-type DetallePedido {
-  producto: Producto!
-  cantidad: Int!
-  subtotal: Float!
-}
-
-enum TipoPedido { PRESENCIAL DELIVERY }
+enum EstadoPedido { PENDIENTE EN_PREPARACION LISTO ENTREGADO CANCELADO }
 enum EstadoDelivery { CONFIRMADO EN_PREPARACION EN_CAMINO ENTREGADO CANCELADO }
+enum TipoDocumento { RECIBO_PAGO CIERRE_CAJA REPORTE_ADMINISTRATIVO }
+enum MetodoPago { EFECTIVO QR }
+enum EstadoPago { PENDIENTE ACEPTADO RECHAZADO REVISION_MANUAL }
 ```
 
 ---
 
-#### 4.1.7 Endpoints REST expuestos hacia MS0
+#### 4.1.7 Endpoints REST expuestos
 
-Todos los endpoints requieren un token JWT válido emitido por MS4.
+Todos los endpoints validan el JWT emitido por MS4 via OAuth2 Resource Server.
 
 | Método | Endpoint | Descripción | Rol requerido |
 |---|---|---|---|
@@ -197,6 +224,7 @@ Todos los endpoints requieren un token JWT válido emitido por MS4.
 | POST | `/api/menu/productos` | Crear producto | Administrador |
 | PUT | `/api/menu/productos/{id}` | Editar producto | Administrador |
 | PATCH | `/api/menu/productos/{id}/disponibilidad` | Cambiar disponibilidad | Administrador |
+| POST | `/api/menu/productos/{id}/imagen` | Recibir imagen desde MS0 proxy y subir a S3 | Administrador |
 | POST | `/api/pedidos` | Registrar pedido presencial | Cajero |
 | GET | `/api/pedidos/turno` | Pedidos del turno activo | Cajero |
 | GET | `/api/pedidos/{id}` | Detalle de pedido | Cajero, Administrador |
@@ -204,11 +232,12 @@ Todos los endpoints requieren un token JWT válido emitido por MS4.
 | POST | `/api/pagos` | Registrar pago y subir comprobante | Cajero, Cliente |
 | GET | `/api/cocina/cola` | Cola de pedidos activos | Cocina |
 | PATCH | `/api/cocina/pedidos/{id}/estado` | Cambiar estado de pedido | Cocina |
-| GET | `/api/blockchain/documentos` | Listar documentos con metadatos | Administrador |
+| GET | `/api/blockchain/documentos` | Listar documentos | Administrador |
 | POST | `/api/blockchain/registrar` | Registrar hash de documento | Administrador |
-| GET | `/api/blockchain/verificar/{txHash}` | Verificar integridad de documento | Administrador |
-| GET | `/api/configuracion` | Obtener configuración del restaurante | Administrador |
+| GET | `/api/blockchain/verificar/{txHash}` | Verificar integridad | Administrador |
+| GET | `/api/configuracion` | Obtener configuración | Administrador |
 | PUT | `/api/configuracion` | Actualizar configuración | Administrador |
+| GET | `/api/internal/resumen-dia` | Resumen de ventas del día (solo para MS2 inter-servicios) | Interno |
 
 ---
 
@@ -216,7 +245,7 @@ Todos los endpoints requieren un token JWT válido emitido por MS4.
 
 | Acción | Canal Redis | Tipo | Payload principal |
 |---|---|---|---|
-| **Publica** | `pedido.creado` | Publicador | `pedidoId`, `tipo`, `productos`, `clienteId` |
+| **Publica** | `pedido.presencial.creado` | Publicador | `pedidoId`, `tipo: PRESENCIAL`, `productos`, `clienteId` |
 | **Publica** | `pago.registrado` | Publicador | `pedidoId`, `pagoId`, `comprobanteUrl` |
 | **Consume** | `comprobante.analizado` | Suscriptor | `pagoId`, `resultado` (ACEPTADO/RECHAZADO/REVISION) |
 | **Consume** | `tiempo.estimado` | Suscriptor | `pedidoId`, `tiempoEstimadoMinutos` |
@@ -242,10 +271,10 @@ Todos los endpoints requieren un token JWT válido emitido por MS4.
 | `AWS_SECRET_ACCESS_KEY` | Credencial AWS |
 | `AWS_S3_BUCKET_NAME` | Nombre del bucket S3 |
 | `BLOCKCHAIN_CONTRACT_ADDRESS` | Dirección del smart contract desplegado en testnet |
-| `BLOCKCHAIN_NETWORK_URL` | URL RPC de la red testnet (Sepolia/Polygon) |
+| `BLOCKCHAIN_NETWORK_URL` | URL RPC de la red testnet (Polygon Mumbai) |
 | `BLOCKCHAIN_WALLET_PRIVATE_KEY` | Clave privada de la wallet para firmar transacciones |
 | `MS2_REST_INTERNAL_URL` | URL interna REST de MS2 para comunicación inter-servicios |
 | `MS3_REST_INTERNAL_URL` | URL interna REST de MS3 para comunicación inter-servicios |
-| `MS4_JWT_PUBLIC_KEY` | Clave pública para validar tokens JWT de MS4 |
+| `MS4_JWT_PUBLIC_KEY` | Ruta a la clave pública RSA de MS4 para validar JWT (`classpath:certs/ms4-public.pem`) |
 
 ---

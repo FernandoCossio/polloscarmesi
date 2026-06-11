@@ -1,65 +1,121 @@
 # Servicio IA 
 
----
+Microservicio `ms-ia` del proyecto **Pollos Carmesí**. Expone capacidades de IA para:
+
+- Clasificación de comprobantes a partir de imágenes (REST).
+- Estimación de tiempo de preparación/entrega de pedidos (GraphQL).
+- Segmentación de clientes usando reglas + K-Means (GraphQL).
 
 ## 1. Descripción del proyecto
 
----
+Este servicio corre con **FastAPI** y expone:
+
+- **REST** bajo `/api` (por ahora: comprobantes).
+- **GraphQL** bajo `/graphql` (predicción de tiempo y segmentación).
+
+El servicio está protegido por **JWT (RS256/RS512)**:
+
+- REST exige `Authorization: Bearer <token>` en endpoints protegidos.
+- GraphQL valida el token y rechaza mutaciones si no hay usuario autenticado.
 
 ## 2. Estructura de carpetas
-
-Estructura principal del proyecto `ms-ia`:
 
 ```text
 ms-ia/
   app/
     api/
-      routes/                 # Carpeta que guarda archivos para exponer rutas (GraphQl o Rest)
+      routes/                     # Endpoints REST (FastAPI)
+        comprobantes.py
     core/
-      config.py               # Configuración global (modelo, Redis, etc.)
-      responses.py            # Modelos y helpers de respuestas estándar
-      redis_ia.py             # Cliente Redis async para caché de vacantes
-    models/
-      schemas.py              # Esquemas Pydantic (request/response)
-    services/                 # Carpeta para guardar diferente servicios donde va la logica de negocio
-    resources/                # Carpeta para guardar algun tipo de recurso que se necesite para el proyecto
-  Dockerfile                  # Definición de la imagen Docker del servicio
-  requirements.txt            # Dependencias de Python del servicio
-  README.md                   # Documentación del servicio
+      logging.py                  # Logger del servicio
+      responses.py                # Helpers de respuesta estándar
+      security.py                 # JWT + contexto GraphQL
+    graphql/
+      schema.py                   # Schema de GraphQL (queries/mutations)
+    services/
+      comprobantes_service.py     # Inferencia de comprobantes (TensorFlow)
+      tiempo_pedidos_service.py   # Predicción tiempo de pedidos (joblib)
+      segmentacion_clientes_service.py # Segmentación clientes (bundle joblib)
+    main.py                       # Inicialización FastAPI + routers
+  artifacts/                      # Modelos/artefactos
+    comprobantes_model.keras
+    comprobantes_class_names.txt
+    tiempo_pedidos_model.pkl
+    segmentacion_clientes_bundle_v3.pkl
+  requirements.txt
+  docker-compose.yml
+  Dockerfile
+  .env.example
+  README.md
 ```
 
----
+## 3. Modelos utilizados y funcionamiento
 
-## 3. Modelo utilizado y funcionamiento actual
+### 3.1 Clasificación de comprobantes (TensorFlow)
 
+- Archivo: `artifacts/comprobantes_model.keras`
+- Clases: `artifacts/comprobantes_class_names.txt`
+- Lógica: [comprobantes_service.py]
 
-## 4. Archivos y datos de prueba en `app/resources`
+Salida principal:
 
+- `decision`: `RECHAZADO` | `REVISION_MANUAL` | `FORMATO_DETECTADO`
+- `formato_detectado`: clase predicha cuando aplica
+- `confianza` y `probabilidades_por_clase`
 
-## 5. Configuración y ejecución local
+### 3.2 Estimación de tiempo de pedidos (joblib / scikit-learn)
+
+- Archivo: `artifacts/tiempo_pedidos_model.pkl`
+- Lógica: [tiempo_pedidos_service.py]
+
+### 3.3 Segmentación de clientes (bundle joblib + reglas)
+
+- Archivo: `artifacts/segmentacion_clientes_bundle_v3.pkl`
+- Lógica: [segmentacion_clientes_service.py]
+
+El flujo aplica reglas primero (inactivo / nuevo / sensible a promociones) y para el resto utiliza K-Means.
+
+## 4. Variables de entorno
+
+El servicio lee variables desde `.env` (ver `app/core/config.py` y `app/core/security.py`).
+
+### 4.1 Variables usadas por Docker Compose
+
+- `PORT`: puerto local donde se expone el servicio (mapea a `8000` dentro del contenedor).
+
+### 4.2 JWT (requerido para arrancar el servicio)
+
+Al iniciar FastAPI se valida que exista una llave pública JWT en disco.
+
+- `JWT_PUBLIC_KEY_PATH` (default: `certs/public.pem`)
+- `JWT_ISSUER` (default: `restaurante`)
+
+Nota: si no existe la llave pública, el servicio fallará al iniciar con un error de archivo faltante.
+
+## 5. Ejecución local (Windows)
 
 ### 5.1 Requisitos previos
-- Python 3.10 o superior.
-- Docker (para el contenedor de Redis).
 
-### 5.2 Levantar Redis Stack
-El servicio requiere Redis para cachear los embeddings de las vacantes. Puedes levantarlo usando Docker:
+- Python 3.12 recomendado (el Dockerfile usa `python:3.12-slim`).
+- Tener los artefactos en `artifacts/`.
+- Tener la llave pública JWT disponible (ver sección 4.2).
 
-```bash
-docker run -d   -p 6380:6379   -p 8002:8001   --name redis-stack-ia   -e REDIS_ARGS="--requirepass tu-clave-segura"   redis/redis-stack
-```
+### 5.2 Configuración de entorno
 
-### 5.3 Configuración de entorno
-1. Crea un archivo `.env` en la raíz del proyecto basado en el ejemplo:
+1. Crea el archivo `.env` en la raíz de `ms-ia`:
+
    ```bash
-   cp .env.example .env
+   copy .env.example .env
    ```
-2. Asegúrate de que las variables en `.env` coincidan con tu configuración de Redis (por defecto apunta a `localhost:6380`).
 
-### 5.4 Instalación y ejecución
-1. Crear un entorno virtual:
+2. Ajusta `PORT` según tu necesidad.
+
+### 5.3 Instalación y ejecución
+
+1. Crear el entorno virtual:
+
    ```bash
-   python -m venv venv
+   python -m venv .venv
    ```
 2. Activar el entorno virtual:
    - **Windows**: `.\venv\Scripts\activate`
@@ -75,61 +131,113 @@ docker run -d   -p 6380:6379   -p 8002:8001   --name redis-stack-ia   -e REDIS_A
 
 ---
 
-## 7. Despliegue con Docker Compose
+## 6. Despliegue con Docker Compose
 
-El proyecto incluye un archivo `docker-compose.yml` que levanta tanto el microservicio de IA como la instancia de Redis Stack configurada para persistencia.
-
-### 7.1 Requisitos previos
-- Docker y Docker Compose instalados.
-- Archivo `.env` configurado en la raíz del proyecto.
-
-### 7.2 Levantar servicios
-Para iniciar todos los servicios en segundo plano:
+### 6.1 Levantar el servicio
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Este comando:
-1.  Levanta un contenedor `redis-stack-ia` con volumen de datos persistente.
-2.  Construye la imagen de `ia-match` y la levanta una vez que Redis está saludable.
-3.  Mapea el microservicio al puerto `PORT` del host.
-4.  Crea un volumen para el caché de Hugging Face, evitando descargar el modelo cada vez que se reinicie el contenedor.
+### 6.2 Logs
 
-### 7.3 Ver logs
 ```bash
 docker compose logs -f
 ```
 
-### 7.4 Detener servicios
+### 6.3 Detener
+
 ```bash
 docker compose down
 ```
 
----
+Nota: el `Dockerfile` actualmente ejecuta `python -m spacy download es_core_news_sm`. Si la imagen falla al construir por `spacy` no instalado, agrega `spacy` a `requirements.txt` o elimina ese paso del Dockerfile.
 
-## 8. Construir la imagen Docker manualmente
+## 7. Probar la API
 
----
+### 7.1 Salud
 
-## 9. Probar la API
+GET:
 
-Con el contenedor en ejecución, puedes acceder a:
+```text
+http://localhost:8000/health
+```
 
-- Documentación interactiva (Swagger UI):
+### 7.2 REST: Comprobantes
 
-  ```text
-  http://localhost:8000/docs
-  ```
+Endpoint:
 
-- Documentación alternativa (ReDoc):
+- `POST /api/comprobantes/analizar` (multipart form-data, campo `archivo`)
 
-  ```text
-  http://localhost:8000/redoc
-  ```
+Requiere header:
 
-### 7.1 Endpoints principales
+- `Authorization: Bearer <token>`
 
-### 7.2 Ejemplos de peticiones
+Ejemplo con curl (Windows):
 
----
+```bash
+curl -X POST "http://localhost:8000/api/comprobantes/analizar" ^
+  -H "Authorization: Bearer <token>" ^
+  -F "archivo=@ruta\\a\\comprobante.png"
+```
+
+### 7.3 GraphQL
+
+URL:
+
+```text
+http://localhost:8000/graphql
+```
+
+Query simple:
+
+```graphql
+query {
+  estadoMsia
+}
+```
+
+Mutación: estimar tiempo de pedido (requiere JWT):
+
+```graphql
+mutation {
+  estimarTiempoPedido(
+    input: {
+      fechaHoraPedido: "2026-06-10T12:30:00"
+      cantidadItems: 3
+      totalPedido: 42000
+      pedidosPendientes: 5
+      tipoPedido: DELIVERY
+      distanciaKm: 2.4
+      requiereCoccion: SI
+    }
+  ) {
+    tiempoEstimadoMin
+    tipoPedido
+    requiereCoccion
+  }
+}
+```
+
+Mutación: segmentar cliente (requiere JWT):
+
+```graphql
+mutation {
+  segmentarCliente(
+    input: {
+      clienteId: 10
+      cantidadPedidos: 12
+      ticketPromedio: 31000
+      diasDesdeUltimaCompra: 8
+      cantidadPedidosPromocion: 3
+    }
+  ) {
+    clienteId
+    numeroSegmento
+    etiquetaSegmento
+    origenSegmentacion
+    clusterKmeans
+    distanciaAlCentroide
+  }
+}
+```

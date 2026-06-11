@@ -1,0 +1,40 @@
+<div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+  <div class="flex flex-col sm:flex-row flex-1 gap-4">
+    <!-- Search Bar -->
+    <div class="w-full sm:w-96">
+      <p-iconfield>
+        <p-inputicon class="pi pi-search"></p-inputicon>
+        <input 
+          pInputText 
+          type="text" 
+          placeholder="Buscar por nombre, usuario o correo..." 
+          class="w-full"
+          (input)="onSearch($event)"
+        />
+      </p-iconfield>
+    </div>
+
+    <!-- Role Filter -->
+    <div class="w-full sm:w-60">
+      <p-select 
+        [(ngModel)]="selectedRole" 
+        [options]="roleOptions" 
+        optionLabel="label" 
+        optionValue="value"
+        class="w-full"
+        placeholder="Todos los roles"
+        (onChange)="onRoleChange($event)">
+      </p-select>
+    </div>
+  </div>
+
+  <!-- Add User button -->
+  <button 
+    pButton 
+    type="button" 
+    label="Nuevo Usuario" 
+    icon="pi pi-plus" 
+    class="p-button-primary"
+    (click)="newUsuarioClick.emit()">
+  </button>
+</div>

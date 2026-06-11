@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Recibo de Pago</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            width: 280px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            font-size: 16px;
+            margin: 0 0 5px 0;
+            color: #d32f2f;
+            text-transform: uppercase;
+        }
+        .info {
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        .info p {
+            margin: 3px 0;
+        }
+        .table-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .table-items th {
+            border-bottom: 1px solid #333;
+            text-align: left;
+            padding: 3px 0;
+        }
+        .table-items td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        .totals {
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+            margin-top: 5px;
+        }
+        .totals-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 3px;
+        }
+        .totals-label {
+            display: table-cell;
+            text-align: left;
+        }
+        .totals-value {
+            display: table-cell;
+            text-align: right;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 10px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Pollos Carmesí</h1>
+        <p>RUC: 10456789123<br/>Av. Principal 123, Cusco<br/>Teléfono: 084-234567</p>
+    </div>
+
+    <div class="info">
+        <p><strong>Nro. Pedido:</strong> <span th:text="${pedido.id}">123</span></p>
+        <p><strong>Ficha:</strong> <span th:text="${pedido.numeroFicha}">A-45</span></p>
+        <p><strong>Fecha:</strong> <span th:text="${#temporals.format(pago.createdAt, 'dd/MM/yyyy HH:mm:ss')}">09/06/2026</span></p>
+        <p><strong>Método de Pago:</strong> <span th:text="${pago.metodo}">EFECTIVO</span></p>
+    </div>
+
+    <table class="table-items">
+        <thead>
+            <tr>
+                <th style="width: 50%;">Producto</th>
+                <th style="width: 15%; text-align: center;">Cant.</th>
+                <th style="width: 35%; text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="det : ${detalles}">
+                <td th:text="${det.producto.nombre}">1/4 Pollo a la Brasa</td>
+                <td style="text-align: center;" th:text="${det.cantidad}">1</td>
+                <td style="text-align: right;" th:text="${'$' + #numbers.formatDecimal(det.subtotal, 1, 2)}">$22.50</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="totals-row">
+            <div class="totals-label">Subtotal:</div>
+            <div class="totals-value" th:text="${'$' + #numbers.formatDecimal(pedido.subtotal, 1, 2)}">$22.50</div>
+        </div>
+        <div class="totals-row">
+            <div class="totals-label">Descuento:</div>
+            <div class="totals-value" th:text="${'$' + #numbers.formatDecimal(pedido.descuento, 1, 2)}">$0.00</div>
+        </div>
+        <div class="totals-row" style="font-size: 14px; margin-top: 5px;">
+            <div class="totals-label"><strong>TOTAL:</strong></div>
+            <div class="totals-value" style="color: #d32f2f;" th:text="${'$' + #numbers.formatDecimal(pago.montoTotal, 1, 2)}">$22.50</div>
+        </div>
+        <div class="totals-row">
+            <div class="totals-label">Monto Recibido:</div>
+            <div class="totals-value" th:text="${'$' + #numbers.formatDecimal(pago.montoRecibido, 1, 2)}">$50.00</div>
+        </div>
+        <div class="totals-row">
+            <div class="totals-label">Cambio:</div>
+            <div class="totals-value" th:text="${'$' + #numbers.formatDecimal(pago.cambio, 1, 2)}">$27.50</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>¡Gracias por su preferencia!<br/>Disfrute de su comida.</p>
+    </div>
+</body>
+</html>

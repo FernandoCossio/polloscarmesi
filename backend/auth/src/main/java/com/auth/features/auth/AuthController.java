@@ -2,6 +2,7 @@ package com.auth.features.auth;
 
 import com.auth.common.response.ApiResponse;
 import com.auth.domain.dtos.auth.LoginRequest;
+import com.auth.domain.dtos.auth.ServiceTokenRequest;
 import com.auth.domain.dtos.auth.TokenResponse;
 import com.auth.domain.dtos.usuario.RegistrarClienteDto;
 import com.auth.domain.dtos.usuario.ResponseUsuarioDto;
@@ -34,6 +35,14 @@ public class AuthController {
 	) {
 		TokenResponse result = authService.login(request);
 		return ResponseEntity.ok(ApiResponse.success(result, "Inicio de sesión exitoso."));
+	}
+
+	@PostMapping("/service-token")
+	public ResponseEntity<ApiResponse<TokenResponse>> issueServiceToken(
+		@Valid @RequestBody ServiceTokenRequest request
+	) {
+		TokenResponse result = authService.issueServiceToken(request);
+		return ResponseEntity.ok(ApiResponse.success(result, "Token de servicio emitido correctamente."));
 	}
 
 	@PostMapping("/register")

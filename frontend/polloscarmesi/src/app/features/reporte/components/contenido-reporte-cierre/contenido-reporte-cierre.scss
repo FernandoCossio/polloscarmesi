@@ -1,0 +1,383 @@
+.content-container {
+  margin-top: 1.5rem;
+
+  .empty-state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    background-color: var(--p-content-background);
+    border: 1px dashed var(--p-content-border-color);
+    border-radius: var(--p-border-radius-xl, 24px);
+
+    .empty-icon {
+      font-size: 3rem;
+      color: var(--p-text-muted-color);
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--p-text-color);
+      margin: 0 0 0.5rem 0;
+    }
+
+    p {
+      max-width: 500px;
+      color: var(--p-text-muted-color);
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  .reports-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+
+    @media (min-width: 992px) {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .report-card {
+      padding: 1.5rem;
+      background-color: var(--p-content-background);
+      border: 1px solid var(--p-content-border-color);
+      border-radius: var(--p-border-radius-xl, 24px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+      .card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--p-text-color);
+        margin: 0 0 1.25rem 0;
+      }
+
+      &.arqueo-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
+        .card-header-with-icon {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+
+          .card-title {
+            margin: 0;
+          }
+
+          .arqueo-icon {
+            font-size: 1.25rem;
+            color: var(--p-text-muted-color);
+          }
+        }
+      }
+    }
+  }
+
+  /* Table styling */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    th {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--p-text-muted-color);
+      background-color: var(--p-content-background);
+      border-bottom: 2px solid var(--p-content-border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      color: var(--p-text-color);
+      border-bottom: 1px solid var(--p-content-border-color);
+    }
+
+    .state-dot-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+
+      &.aceptado {
+        background-color: var(--p-emerald-500);
+      }
+      &.pendiente {
+        background-color: var(--p-amber-500);
+      }
+      &.rechazado {
+        background-color: var(--p-rose-500);
+      }
+      &.revision_manual {
+        background-color: var(--p-indigo-500);
+      }
+    }
+
+    .total-row {
+      background-color: rgba(var(--p-primary-50-rgb, 140, 75, 43), 0.04);
+      
+      td {
+        border-bottom: none;
+        border-top: 2px solid var(--p-content-border-color);
+      }
+
+      .text-total {
+        color: #8c4b2b;
+        .app-dark & {
+          color: var(--p-primary-color);
+        }
+      }
+    }
+  }
+
+  /* Methods layout */
+  .methods-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+
+    .method-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background-color: var(--p-content-background);
+      border: 1px solid var(--p-content-border-color);
+      border-radius: var(--p-border-radius-lg, 16px);
+
+      .method-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: var(--p-border-radius-md, 12px);
+        font-size: 1.25rem;
+
+        &.bg-efectivo {
+          background-color: var(--p-emerald-50);
+          color: var(--p-emerald-600);
+          .app-dark & {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--p-emerald-400);
+          }
+        }
+
+        &.bg-qr {
+          background-color: var(--p-teal-50);
+          color: var(--p-teal-600);
+          .app-dark & {
+            background-color: rgba(20, 184, 166, 0.1);
+            color: var(--p-teal-400);
+          }
+        }
+      }
+
+      .method-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        .method-name {
+          font-weight: 700;
+          font-size: 0.875rem;
+          color: var(--p-text-color);
+          letter-spacing: 0.025em;
+        }
+
+        .method-subtext {
+          font-size: 0.8rem;
+          color: var(--p-text-muted-color);
+        }
+      }
+
+      .method-values {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+        margin-left: auto;
+
+        .method-tx {
+          font-size: 0.8rem;
+          color: var(--p-text-muted-color);
+        }
+
+        .method-amount {
+          font-weight: 700;
+          font-size: 0.95rem;
+          color: #8c4b2b;
+          .app-dark & {
+            color: var(--p-primary-color);
+          }
+        }
+      }
+    }
+  }
+
+  /* Arqueo layout */
+  .arqueo-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex-grow: 1;
+
+    .arqueo-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .arqueo-row-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .arqueo-row-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--p-text-color);
+        letter-spacing: 0.025em;
+      }
+
+      .arqueo-row-desc {
+        font-size: 0.775rem;
+        color: var(--p-text-muted-color);
+      }
+
+      .arqueo-row-val {
+        font-size: 0.95rem;
+        color: var(--p-text-color);
+        font-weight: 600;
+      }
+
+      &.highlight {
+        .arqueo-row-title {
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+        .arqueo-row-val {
+          font-size: 1.05rem;
+        }
+      }
+    }
+
+    .divider {
+      border-top: 1px dashed var(--p-content-border-color);
+      margin: 0.25rem 0;
+    }
+  }
+
+  /* Difference Result Box */
+  .diff-box {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border-radius: var(--p-border-radius-lg, 16px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+
+    .diff-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .diff-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+      line-height: 1;
+    }
+
+    .diff-status {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .diff-warning {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.775rem;
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+
+    &.diff-zero {
+      background-color: var(--p-emerald-50);
+      border-color: var(--p-emerald-100);
+      color: var(--p-emerald-700);
+
+      .app-dark & {
+        background-color: rgba(16, 185, 129, 0.08);
+        border-color: rgba(16, 185, 129, 0.15);
+        color: var(--p-emerald-400);
+      }
+    }
+
+    &.diff-negative {
+      background-color: var(--p-rose-50);
+      border-color: var(--p-rose-100);
+      color: var(--p-rose-700);
+
+      .app-dark & {
+        background-color: rgba(244, 63, 94, 0.08);
+        border-color: rgba(244, 63, 94, 0.15);
+        color: var(--p-rose-400);
+      }
+    }
+
+    &.diff-positive {
+      background-color: var(--p-amber-50);
+      border-color: var(--p-amber-100);
+      color: var(--p-amber-700);
+
+      .app-dark & {
+        background-color: rgba(245, 158, 11, 0.08);
+        border-color: rgba(245, 158, 11, 0.15);
+        color: var(--p-amber-400);
+      }
+    }
+  }
+}

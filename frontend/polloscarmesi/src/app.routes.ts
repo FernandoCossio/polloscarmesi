@@ -35,6 +35,36 @@ export const appRoutes: Routes = [
                 path: 'historial-pedidos',
                 loadComponent: () => import('./app/features/pedido/pages/historial-pedidos/historial-pedidos').then(m => m.HistorialPedidos),
                 canActivate: [authGuard, roleGuard(ROLES.CAJERO)]
+            },
+            {
+                path: 'cola-pedidos',
+                loadComponent: () => import('./app/features/pedido/pages/cola-pedidos/cola-pedidos').then(m => m.ColaPedidos),
+                canActivate: [authGuard, roleGuard([ROLES.COCINA, ROLES.ADMINISTRADOR])]
+            },
+            {
+                path: 'reporte-ventas',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-ventas/reporte-ventas').then(m => m.ReporteVentas),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'reporte-rendimiento',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-rendimiento/reporte-rendimiento').then(m => m.ReporteRendimiento),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'reporte-cierre-caja',
+                loadComponent: () => import('./app/features/reporte/pages/reporte-cierre-caja/reporte-cierre-caja').then(m => m.ReporteCierreCaja),
+                canActivate: [authGuard, roleGuard([ROLES.ADMINISTRADOR, ROLES.CAJERO])]
+            },
+            {
+                path: 'usuarios',
+                loadComponent: () => import('./app/features/usuario/pages/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
+            },
+            {
+                path: 'configuracion',
+                loadComponent: () => import('./app/features/configuracion/pages/edicion/edicion').then(m => m.Edicion),
+                canActivate: [authGuard, roleGuard(ROLES.ADMINISTRADOR)]
             }
         ]
     },

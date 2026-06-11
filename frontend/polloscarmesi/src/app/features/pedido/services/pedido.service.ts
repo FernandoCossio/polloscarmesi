@@ -169,4 +169,52 @@ export class PedidoService {
     formData.append('file', file);
     return this.http.post<Pago>(`${environment.apiUrl}/pagos/${pagoId}/comprobante`, formData);
   }
+
+  obtenerColaCocina(): Observable<Pedido[]> {
+    const query = `
+      query {
+        obtenerColaCocina {
+          id
+          numeroFicha
+          tipo
+          estado
+          subtotal
+          descuento
+          total
+          tiempoEstimadoPreparacion
+          clienteId
+          detalles {
+            id
+            cantidad
+            producto {
+              id
+              nombre
+            }
+          }
+          fechaCreacion
+        }
+      }
+    `;
+    return this.http.post<{ data: { obtenerColaCocina: Pedido[] } }>(this.graphqlUrl, { query }).pipe(
+      map(response => response.data.obtenerColaCocina)
+    );
+  }
+
+  actualizarEstadoPedidoCocina(id: string | number, estado: string): Observable<Pedido> {
+    const query = `
+      mutation($id: ID!, $estado: EstadoPedido!) {
+        actualizarEstadoPedidoCocina(id: $id, estado: $estado) {
+          id
+          numeroFicha
+          estado
+        }
+      }
+    `;
+    return this.http.post<{ data: { actualizarEstadoPedidoCocina: Pedido } }>(this.graphqlUrl, {
+      query,
+      variables: { id: id.toString(), estado }
+    }).pipe(
+      map(response => response.data.actualizarEstadoPedidoCocina)
+    );
+  }
 }

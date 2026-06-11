@@ -3,37 +3,56 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes.recommendations import router as recommendations_router
-from app.core.redis_ia import init_redis_ia, close_redis_ia
-from app.services.embeddings import init_embedding_service
-from app.services.vacantes_cache import init_vacantes_cache_service, get_vacantes_cache_service
 from app.core.logging import get_logger
-
+from app.graphql.schema import graphql_router
+from app.services.tiempo_pedidos_service import init_tiempo_pedidos_service
+from app.services.segmentacion_clientes_service import (
+    init_segmentacion_clientes_service,
+)
 logger = get_logger("Main")
+from app.api.routes.comprobantes import (
+    router as comprobantes_router,
+)
+from app.services.comprobantes_service import (
+    init_comprobantes_service,
+)
+from app.services.internal_auth import (
+    init_internal_auth_service,
+)
+
+from app.core.security import (
+    validar_configuracion_jwt,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Iniciando aplicación IA Match...")
+    logger.info("Iniciando Microservicio de IA...")
+
+    validar_configuracion_jwt()
+    logger.info("Llave pública JWT cargada correctamente ✓")
     
-    logger.info("Cargando modelo de embeddings...")
-    init_embedding_service()
-    logger.info("Modelo cargado ✓")
-    
-    logger.info("Inicializando servicio de caché de vacantes...")
-    init_vacantes_cache_service()
-    logger.info("Servicio de caché inicializado ✓")
-    
-    await init_redis_ia()
-    logger.info("Redis conectado ✓")
-    
+    init_tiempo_pedidos_service()
+    init_segmentacion_clientes_service()
+    init_comprobantes_service()
+    init_internal_auth_service()
+
+    logger.info("GraphQL disponible en /graphql")
+
     try:
         yield
     finally:
-        logger.info("Cerrando aplicación IA Match...")
-        await close_redis_ia()
+        logger.info("Cerrando Microservicio de IA...")
 
 
-app = FastAPI(title="Puntuacion de Match CV-Vacante", lifespan=lifespan)
+app = FastAPI(
+    title="Microservicio de Inteligencia Artificial",
+    description=(
+        "Clasificación de comprobantes, estimación de tiempos "
+        "de pedidos y segmentación de clientes."
+    ),
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 origins = [
     "http://localhost:4200",
@@ -48,9 +67,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(recommendations_router, prefix="/api")
+app.include_router(graphql_router, prefix="/graphql")
 
+app.include_router(
+    comprobantes_router,
+    prefix="/api",
+)
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "ms-ia",
+    }

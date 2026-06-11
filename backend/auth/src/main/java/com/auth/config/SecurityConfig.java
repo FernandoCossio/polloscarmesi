@@ -33,12 +33,15 @@ public class SecurityConfig {
 				.requestMatchers(
 					"/auth/register",
 					"/auth/login",
+					"/auth/service-token",
 					"/v3/api-docs/**",
 					"/swagger-ui/**",
 					"/swagger-ui.html"
 				).permitAll()
                 .requestMatchers("/auth/register").permitAll()
                 .requestMatchers("/auth/login").permitAll()
+                .requestMatchers("/auth/service-token").permitAll()
+				.requestMatchers("/usuarios/**").hasAuthority("ROLE_ADMINISTRADOR")
 				.anyRequest().authenticated()
 			)
 			.oauth2ResourceServer(oauth2 -> oauth2
