@@ -1,8 +1,10 @@
 package com.restaurante.features.configuracion;
 
+import com.restaurante.domain.dtos.ConfiguracionActualizadaEvent;
 import com.restaurante.domain.dtos.ConfiguracionRequest;
 import com.restaurante.domain.dtos.ConfiguracionResponse;
 import com.restaurante.domain.models.Configuracion;
+import com.restaurante.features.pedido.RedisEventPublisher;
 import com.restaurante.features.configuracion.exceptions.ConfiguracionNoEncontradaException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConfiguracionService {
 
     private final ConfiguracionRepository configuracionRepository;
+    private final RedisEventPublisher redisEventPublisher;
 
-    public ConfiguracionService(ConfiguracionRepository configuracionRepository) {
+    public ConfiguracionService(ConfiguracionRepository configuracionRepository,
+                                RedisEventPublisher redisEventPublisher) {
         this.configuracionRepository = configuracionRepository;
+        this.redisEventPublisher = redisEventPublisher;
     }
 
     public ConfiguracionResponse getConfiguracion() {
@@ -50,7 +55,7 @@ public class ConfiguracionService {
         setValue("umbralAlertaCocina", String.valueOf(request.getUmbralAlertaCocina()));
         setValue("coordenadas", request.getCoordenadas());
 
-        return new ConfiguracionResponse(
+        ConfiguracionResponse response = new ConfiguracionResponse(
                 request.getNombreRestaurante(),
                 request.getRuc(),
                 request.getDireccion(),
@@ -60,6 +65,19 @@ public class ConfiguracionService {
                 request.getUmbralAlertaCocina(),
                 request.getCoordenadas()
         );
+
+        redisEventPublisher.publishConfiguracionActualizada(new ConfiguracionActualizadaEvent(
+                response.getNombreRestaurante(),
+                response.getRuc(),
+                response.getDireccion(),
+                response.getTelefono(),
+                response.getHorarioAtencion(),
+                response.getTiempoMaximoPreparacion(),
+                response.getUmbralAlertaCocina(),
+                response.getCoordenadas()
+        ));
+
+        return response;
     }
 
     private String getValue(String clave) {

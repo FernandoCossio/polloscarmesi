@@ -10,6 +10,7 @@ import com.restaurante.features.pedido.exceptions.PedidoEstadoInvalidoException;
 import com.restaurante.features.pedido.exceptions.PedidoNoEncontradoException;
 import com.restaurante.features.productos.ProductoRepository;
 import com.restaurante.features.productos.exceptions.ProductoNoEncontradoException;
+import com.restaurante.services.TiempoPedidoEstimacionClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,8 +24,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,16 +33,28 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class PedidoService {
 
+    private static final int DEFAULT_TIEMPO_ESTIMADO_PREPARACION = 20;
+    private static final List<EstadoPedido> ACTIVE_STATES = List.of(
+            EstadoPedido.PENDIENTE,
+            EstadoPedido.CONFIRMADO,
+            EstadoPedido.EN_PREPARACION,
+            EstadoPedido.EN_CAMINO,
+            EstadoPedido.LISTO
+    );
+
     private final PedidoRepository pedidoRepository;
     private final ProductoRepository productoRepository;
     private final RedisEventPublisher redisEventPublisher;
+    private final TiempoPedidoEstimacionClient tiempoPedidoEstimacionClient;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ProductoRepository productoRepository,
-                         RedisEventPublisher redisEventPublisher) {
+                         RedisEventPublisher redisEventPublisher,
+                         TiempoPedidoEstimacionClient tiempoPedidoEstimacionClient) {
         this.pedidoRepository = pedidoRepository;
         this.productoRepository = productoRepository;
         this.redisEventPublisher = redisEventPublisher;
+        this.tiempoPedidoEstimacionClient = tiempoPedidoEstimacionClient;
     }
 
     public PedidoResponse findById(Long id) {
@@ -68,14 +81,7 @@ public class PedidoService {
     }
 
     public List<PedidoResponse> findActivePedidos() {
-        List<EstadoPedido> activeStates = Arrays.asList(
-                EstadoPedido.PENDIENTE,
-                EstadoPedido.CONFIRMADO,
-                EstadoPedido.EN_PREPARACION,
-                EstadoPedido.EN_CAMINO,
-                EstadoPedido.LISTO
-        );
-        return pedidoRepository.findAllByEstadoIn(activeStates).stream()
+        return pedidoRepository.findAllByEstadoIn(ACTIVE_STATES).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -96,9 +102,6 @@ public class PedidoService {
         
         BigDecimal descuento = request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO;
         pedido.setDescuento(descuento);
-
-        // TODO: Implementación futura para calcular tiempo estimado de preparación en base al microservicio de cocina/algoritmo dinámico.
-        pedido.setTiempoEstimadoPreparacion(20);
 
         List<DetallePedido> detalles = new ArrayList<>();
         BigDecimal subtotalAcumulado = BigDecimal.ZERO;
@@ -131,6 +134,7 @@ public class PedidoService {
         }
         pedido.setTotal(total);
         pedido.setDetalles(detalles);
+        pedido.setTiempoEstimadoPreparacion(estimarTiempoPreparacion(request, detalles, total));
 
         Pedido saved = pedidoRepository.save(pedido);
 
@@ -253,5 +257,39 @@ public class PedidoService {
                 producto.getDisponible(),
                 catResponse
         );
+    }
+
+    private Integer estimarTiempoPreparacion(PedidoRequest request, List<DetallePedido> detalles, BigDecimal totalPedido) {
+        int cantidadItems = detalles.stream()
+                .mapToInt(DetallePedido::getCantidad)
+                .sum();
+        long pedidosPendientes = pedidoRepository.countByEstadoIn(ACTIVE_STATES);
+        boolean requiereCoccion = detalles.stream().anyMatch(this::requiereCoccion);
+
+        try {
+            return tiempoPedidoEstimacionClient.estimarTiempoPedido(
+                    LocalDateTime.now(),
+                    cantidadItems,
+                    totalPedido,
+                    pedidosPendientes,
+                    request.getTipo(),
+                    0.0,
+                    requiereCoccion
+            );
+        } catch (Exception error) {
+            log.warn("No se pudo estimar el tiempo del pedido con ms-ia. Se usará el valor por defecto de {} minutos: {}",
+                    DEFAULT_TIEMPO_ESTIMADO_PREPARACION,
+                    error.getMessage());
+            return DEFAULT_TIEMPO_ESTIMADO_PREPARACION;
+        }
+    }
+
+    private boolean requiereCoccion(DetallePedido detalle) {
+        if (detalle.getProducto().getCategoria() == null || detalle.getProducto().getCategoria().getNombre() == null) {
+            return true;
+        }
+
+        String categoria = detalle.getProducto().getCategoria().getNombre().trim().toLowerCase(Locale.ROOT);
+        return !categoria.equals("bebidas");
     }
 }
