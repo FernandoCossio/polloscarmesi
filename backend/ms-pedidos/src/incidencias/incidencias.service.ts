@@ -2,7 +2,10 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Incidencia } from '../entities/incidencia.entity';
-import { PedidoDelivery, EstadoDelivery } from '../entities/pedido-delivery.entity';
+import {
+  PedidoDelivery,
+  EstadoDelivery,
+} from '../entities/pedido-delivery.entity';
 import { AsignacionService } from '../asignacion/asignacion.service';
 import { DynamoDbService } from '../infrastructure/dynamodb/dynamodb.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
@@ -48,9 +51,11 @@ export class IncidenciasService {
     });
 
     if (tipo === 'RECHAZO_PEDIDO') {
-      this.logger.log(`Driver ID ${repartidorId} rejected Pedido ${pedidoId}. Liberating and reassigning.`);
+      this.logger.log(
+        `Driver ID ${repartidorId} rejected Pedido ${pedidoId}. Liberating and reassigning.`,
+      );
       await this.asignacionService.liberarRepartidorPorPedido(pedidoId, false);
-      
+
       pedido.estado = EstadoDelivery.PENDIENTE;
       await this.pedidoRepo.save(pedido);
 
@@ -64,7 +69,9 @@ export class IncidenciasService {
         try {
           await this.asignacionService.asignarRepartidorAutomaticamente(pedido);
         } catch (err) {
-          this.logger.error(`Failed auto-reassigning Pedido ${pedidoId} after rejection: ${err.message}`);
+          this.logger.error(
+            `Failed auto-reassigning Pedido ${pedidoId} after rejection: ${err.message}`,
+          );
         }
       }, 2000);
     } else {

@@ -1,4 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum EstadoRepartidor {
   DISPONIBLE = 'DISPONIBLE',
@@ -21,10 +26,22 @@ export class RepartidorDisponibilidad {
   })
   estado: EstadoRepartidor;
 
-  @Column({ name: 'latitud_actual', type: 'decimal', precision: 10, scale: 8, nullable: true })
+  @Column({
+    name: 'latitud_actual',
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+  })
   latitudActual: number;
 
-  @Column({ name: 'longitud_actual', type: 'decimal', precision: 11, scale: 8, nullable: true })
+  @Column({
+    name: 'longitud_actual',
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+  })
   longitudActual: number;
 
   @UpdateDateColumn({ name: 'ultima_actualizacion' })

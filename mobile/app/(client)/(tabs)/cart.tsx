@@ -32,7 +32,10 @@ export default function CartScreen() {
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
           <View style={styles.itemCard}>
-            <Image source={{ uri: item.imagen }} style={styles.itemImage} />
+            <Image 
+              source={{ uri: item.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80' }} 
+              style={styles.itemImage} 
+            />
             <View style={styles.itemDetails}>
               <View style={styles.itemHeader}>
                 <Text style={styles.itemName} numberOfLines={1}>

@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'dispositivos_tokens' })
 export class DispositivoToken {
@@ -11,7 +17,12 @@ export class DispositivoToken {
   @Column({ type: 'varchar', length: 50 })
   rol: string;
 
-  @Column({ name: 'expo_push_token', type: 'varchar', length: 255, unique: true })
+  @Column({
+    name: 'expo_push_token',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+  })
   expoPushToken: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })

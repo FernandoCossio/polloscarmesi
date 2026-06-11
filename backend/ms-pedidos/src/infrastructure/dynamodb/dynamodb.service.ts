@@ -14,11 +14,19 @@ export class DynamoDbService {
   private readonly isMockMode: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    this.eventsTable = this.configService.get<string>('aws.dynamoDbEventsTable', 'polloscarmesi-events');
-    this.gpsTable = this.configService.get<string>('aws.dynamoDbGpsTable', 'polloscarmesi-gps');
+    this.eventsTable = this.configService.get<string>(
+      'aws.dynamoDbEventsTable',
+      'polloscarmesi-events',
+    );
+    this.gpsTable = this.configService.get<string>(
+      'aws.dynamoDbGpsTable',
+      'polloscarmesi-gps',
+    );
 
     const accessKeyId = this.configService.get<string>('aws.accessKeyId');
-    const secretAccessKey = this.configService.get<string>('aws.secretAccessKey');
+    const secretAccessKey = this.configService.get<string>(
+      'aws.secretAccessKey',
+    );
     const region = this.configService.get<string>('aws.region');
     const endpointUrl = this.configService.get<string>('aws.endpointUrl');
 
@@ -41,11 +49,17 @@ export class DynamoDbService {
       this.logger.log('DynamoDB Client initialized successfully');
     } else {
       this.isMockMode = true;
-      this.logger.log('DynamoDB running in LOCAL mock mode. Logs will write to disk/console.');
+      this.logger.log(
+        'DynamoDB running in LOCAL mock mode. Logs will write to disk/console.',
+      );
     }
   }
 
-  async logEvent(pedidoId: string, eventName: string, payload: any): Promise<void> {
+  async logEvent(
+    pedidoId: string,
+    eventName: string,
+    payload: any,
+  ): Promise<void> {
     const timestamp = new Date().toISOString();
     const item = {
       id: `${pedidoId}-${timestamp}`,
@@ -63,7 +77,9 @@ export class DynamoDbService {
             Item: marshall(item),
           }),
         );
-        this.logger.log(`Logged event to DynamoDB table ${this.eventsTable}: ${eventName} for Pedido ${pedidoId}`);
+        this.logger.log(
+          `Logged event to DynamoDB table ${this.eventsTable}: ${eventName} for Pedido ${pedidoId}`,
+        );
       } catch (err) {
         this.logger.error(`Error logging to DynamoDB events: ${err.message}`);
         this.writeLocalLog('events', item);
@@ -99,7 +115,9 @@ export class DynamoDbService {
             Item: marshall(item),
           }),
         );
-        this.logger.log(`Logged GPS tracking to DynamoDB table ${this.gpsTable}: ${eventName} for Pedido ${pedidoId}`);
+        this.logger.log(
+          `Logged GPS tracking to DynamoDB table ${this.gpsTable}: ${eventName} for Pedido ${pedidoId}`,
+        );
       } catch (err) {
         this.logger.error(`Error logging to DynamoDB GPS: ${err.message}`);
         this.writeLocalLog('gps', item);
@@ -113,10 +131,10 @@ export class DynamoDbService {
     try {
       const uploadDir = path.resolve(process.cwd(), 'uploads');
       fs.mkdirSync(uploadDir, { recursive: true });
-      
+
       const logFile = path.join(uploadDir, `dynamodb-mock-${type}.json`);
       let logs: any[] = [];
-      
+
       if (fs.existsSync(logFile)) {
         try {
           const content = fs.readFileSync(logFile, 'utf8');
@@ -125,10 +143,12 @@ export class DynamoDbService {
           logs = [];
         }
       }
-      
+
       logs.push(data);
       fs.writeFileSync(logFile, JSON.stringify(logs, null, 2));
-      this.logger.log(`[MOCK DYNAMODB][${type.toUpperCase()}] Saved to local file: ${JSON.stringify(data)}`);
+      this.logger.log(
+        `[MOCK DYNAMODB][${type.toUpperCase()}] Saved to local file: ${JSON.stringify(data)}`,
+      );
     } catch (err) {
       this.logger.error(`Failed to write local mock log: ${err.message}`);
     }

@@ -1,4 +1,10 @@
-import { Controller, Post, Headers, Query, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Headers,
+  Query,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AutomatizacionService } from './automatizacion.service';
 
@@ -14,10 +20,15 @@ export class AutomatizacionController {
     @Headers('x-n8n-secret') n8nSecret: string,
     @Query('fecha') fecha?: string,
   ) {
-    const configuredSecret = this.configService.get<string>('n8n.secret', 'n8n_consolidated_secret_2026');
+    const configuredSecret = this.configService.get<string>(
+      'n8n.secret',
+      'n8n_consolidated_secret_2026',
+    );
 
     if (!n8nSecret || n8nSecret !== configuredSecret) {
-      throw new ForbiddenException('Acceso denegado: Token secreto de n8n inválido o ausente');
+      throw new ForbiddenException(
+        'Acceso denegado: Token secreto de n8n inválido o ausente',
+      );
     }
 
     const result = await this.automatizacionService.realizarCierreCaja(fecha);

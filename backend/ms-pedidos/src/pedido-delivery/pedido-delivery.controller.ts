@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { PedidoDeliveryService } from './pedido-delivery.service';
 import { CrearPedidoDeliveryDto } from './dto/crear-pedido.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -18,14 +26,16 @@ export class PedidoDeliveryController {
   @Get('pedidos/cliente')
   async obtenerHistorialCliente(@CurrentUser() user: any) {
     const clienteId = user.userId;
-    const pedidos = await this.pedidoService.obtenerPedidosPorCliente(clienteId);
+    const pedidos =
+      await this.pedidoService.obtenerPedidosPorCliente(clienteId);
     return { success: true, pedidos };
   }
 
   @Get('repartidor/pedidos')
   async obtenerPedidosRepartidor(@CurrentUser() user: any) {
     const repartidorId = user.userId;
-    const pedidos = await this.pedidoService.obtenerPedidosPorRepartidor(repartidorId);
+    const pedidos =
+      await this.pedidoService.obtenerPedidosPorRepartidor(repartidorId);
     return { success: true, pedidos };
   }
 
