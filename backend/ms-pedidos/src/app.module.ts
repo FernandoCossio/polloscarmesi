@@ -42,6 +42,7 @@ import { ChatModule } from './chat/chat.module';
         username: config.get<string>('database.username'),
         password: config.get<string>('database.password'),
         database: config.get<string>('database.name'),
+        ssl: config.get<string>('database.ssl') === 'true' || config.get<string>('database.host')?.includes('render.com') ? { rejectUnauthorized: false } : false,
         entities: [
           PedidoDelivery,
           DetallePedidoDelivery,
