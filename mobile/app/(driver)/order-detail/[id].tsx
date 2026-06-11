@@ -5,8 +5,25 @@ import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ORDER_STATUS, OrderStatus, mapBackendStatusToMobile } from '../../../constants/orders';
 import { RestaurantService } from '../../../services/restaurant-service';
+import { GATEWAY_URL } from '../../../services/auth-service';
 import * as ImagePicker from 'expo-image-picker';
 import { MapSimulation } from '../../../components/MapSimulation';
+
+const getDisplayImageUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    try {
+      const gatewayUrl = GATEWAY_URL;
+      const gatewayHost = gatewayUrl.split('//')[1]?.split(':')[0];
+      if (gatewayHost && gatewayHost !== 'localhost' && gatewayHost !== '127.0.0.1') {
+        return url.replace('localhost', gatewayHost).replace('127.0.0.1', gatewayHost);
+      }
+    } catch (e) {
+      console.warn('Error replacing localhost in image URL:', e);
+    }
+  }
+  return url;
+};
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -89,23 +106,27 @@ export default function OrderDetailScreen() {
     setIsLoading(true);
     try {
       const data = await RestaurantService.obtenerPedidoDelivery(id);
+      if (!data) {
+        throw new Error('No se recibieron datos válidos para este pedido.');
+      }
       
       const formatted = {
-        cliente: data.clienteNombre || `Cliente #${data.clienteId}`,
+        cliente: data.clienteNombre || `Cliente #${data.clienteId || 'Desconocido'}`,
         telefono: data.clienteTelefono || null,
-        direccion: data.direccionEntrega,
+        direccion: data.direccionEntrega || 'Sin dirección registrada',
         lat: Number(data.latitud) || -17.7833,
         lon: Number(data.longitud) || -63.1821,
-        productos: data.detalles.map((d: any) => ({
-          nombre: d.nombreProducto,
-          cantidad: d.cantidad,
-          precio: Number(d.precioUnitario),
+        productos: (data.detalles || []).map((d: any) => ({
+          nombre: d.nombreProducto || 'Producto',
+          cantidad: Number(d.cantidad) || 0,
+          precio: Number(d.precioUnitario) || 0,
         })),
-        subtotal: Number(data.subtotal),
-        envio: Number(data.total) - Number(data.subtotal),
-        total: Number(data.total),
+        subtotal: Number(data.subtotal) || 0,
+        envio: Math.max(0, (Number(data.total) || 0) - (Number(data.subtotal) || 0)),
+        total: Number(data.total) || 0,
         pago: 'Efectivo/QR',
         estado: mapBackendStatusToMobile(data.estado),
+        evidenciaUrl: data.evidenciaUrl || null,
       };
 
       setOrder(formatted);
@@ -114,8 +135,12 @@ export default function OrderDetailScreen() {
         setSimProgress(100);
         setCurrentCoords(`${formatted.lat.toFixed(4)}, ${formatted.lon.toFixed(4)}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching order details:', err);
+      Alert.alert(
+        'Error',
+        `No se pudo cargar el detalle del pedido: ${err.message || 'Error desconocido'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -315,6 +340,22 @@ export default function OrderDetailScreen() {
                   <Text style={styles.photoSubtext}>(Requerido para finalizar entrega)</Text>
                 </TouchableOpacity>
               )}
+            </View>
+          </View>
+        )}
+
+        {/* Foto de Evidencia para Pedido Entregado */}
+        {estado === ORDER_STATUS.ENTREGADO && order.evidenciaUrl && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Evidencia de Entrega</Text>
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: getDisplayImageUrl(order.evidenciaUrl) || '' }}
+                  style={styles.evidenceImage}
+                  resizeMode="cover"
+                />
+              </View>
             </View>
           </View>
         )}

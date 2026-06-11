@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/auth-context';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { mapBackendStatusToMobile } from '../../constants/orders';
 import { RestaurantService } from '../../services/restaurant-service';
+import { useRouter } from 'expo-router';
 
 export default function DriverHistory() {
+  const router = useRouter();
   const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +19,7 @@ export default function DriverHistory() {
     if (showLoading) setIsLoading(true);
     try {
       const data = await RestaurantService.obtenerPedidosPorRepartidor(user.id);
-      
+
       const historyData = (data || []).filter((o: any) => o.estado === 'ENTREGADO');
 
       const formatted = historyData.map((pedido: any) => {
@@ -87,7 +89,14 @@ export default function DriverHistory() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.orderCard}>
+          <TouchableOpacity
+            style={styles.orderCard}
+            activeOpacity={0.7}
+            onPress={() => router.push({
+              pathname: '/(driver)/order-detail/[id]',
+              params: { id: item.id }
+            })}
+          >
             <View style={styles.orderHeader}>
               <Text style={styles.orderId} numberOfLines={1} ellipsizeMode="tail">
                 Pedido #{item.id.substring(0, 8).toUpperCase()}
@@ -118,7 +127,7 @@ export default function DriverHistory() {
                 <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </ThemedView>
