@@ -80,7 +80,7 @@ export function MapSimulation({
       pulseAnim.setValue(1);
       opacityAnim.setValue(0.6);
     }
-  }, [activeAnimation, estado]);
+  }, [activeAnimation, estado, opacityAnim, pulseAnim]);
 
   const startLat = -17.784;
   const startLon = -63.183;
