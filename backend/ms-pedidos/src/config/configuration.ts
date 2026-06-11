@@ -6,6 +6,7 @@ export default () => ({
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || '0910',
     name: process.env.DB_NAME || 'pedidos',
+    ssl: process.env.DB_SSL === 'true',
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
