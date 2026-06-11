@@ -13,6 +13,9 @@ logger = get_logger("Main")
 from app.api.routes.comprobantes import (
     router as comprobantes_router,
 )
+from app.api.routes.tiempo_pedidos import (
+    router as tiempo_pedidos_router,
+)
 from app.services.comprobantes_service import (
     init_comprobantes_service,
 )
@@ -71,6 +74,11 @@ app.include_router(graphql_router, prefix="/graphql")
 
 app.include_router(
     comprobantes_router,
+    prefix="/api",
+)
+
+app.include_router(
+    tiempo_pedidos_router,
     prefix="/api",
 )
 
