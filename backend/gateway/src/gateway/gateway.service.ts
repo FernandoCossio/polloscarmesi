@@ -59,6 +59,10 @@ export class GatewayService implements OnModuleDestroy {
       'microservices.ms1.graphqlUrl',
     );
 
+    const ms2GraphqlUrl = this.configService.get<string>(
+      'microservices.ms2.graphqlUrl',
+    );
+
     const msiaGraphqlUrl = this.configService.get<string>(
       'microservices.msia.graphqlUrl',
     );
@@ -67,11 +71,19 @@ export class GatewayService implements OnModuleDestroy {
       throw new Error('MS1_GRAPHQL_URL is not configured');
     }
 
+    if (!ms2GraphqlUrl) {
+      throw new Error('MS2_GRAPHQL_URL is not configured');
+    }
+
     if (!msiaGraphqlUrl) {
       throw new Error('MSIA_GRAPHQL_URL is not configured');
     }
 
+    const subschemas: any[] = [];
+
+    // Load MS1, MS2 and MS-IA
     this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
+    this.logger.log(`Conectando a MS2: ${ms2GraphqlUrl}`);
     this.logger.log(`Conectando a MS-IA: ${msiaGraphqlUrl}`);
 
     const internalAuthorizationHeader =
@@ -100,16 +112,24 @@ export class GatewayService implements OnModuleDestroy {
       });
 
     const ms1Executor = crearExecutor(ms1GraphqlUrl);
+    const ms2Executor = crearExecutor(ms2GraphqlUrl);
     const msiaExecutor = crearExecutor(msiaGraphqlUrl);
 
-    const [ms1RemoteSchema, msiaRemoteSchema] = await Promise.all([
+    const [ms1RemoteSchema, ms2RemoteSchema, msiaRemoteSchema] = await Promise.all([
       schemaFromExecutor(ms1Executor),
+      schemaFromExecutor(ms2Executor),
       schemaFromExecutor(msiaExecutor),
     ]);
 
     this.logger.debug(
       `Campos detectados en MS1: ${Object.keys(
         ms1RemoteSchema.getQueryType()?.getFields() ?? {},
+      )}`,
+    );
+
+    this.logger.debug(
+      `Campos detectados en MS2: ${Object.keys(
+        ms2RemoteSchema.getQueryType()?.getFields() ?? {},
       )}`,
     );
 
@@ -130,6 +150,11 @@ export class GatewayService implements OnModuleDestroy {
       executor: ms1Executor,
     });
 
+    const ms2WrappedSchema = wrapSchema({
+      schema: ms2RemoteSchema,
+      executor: ms2Executor,
+    });
+
     const msiaWrappedSchema = wrapSchema({
       schema: msiaRemoteSchema,
       executor: msiaExecutor,
@@ -140,6 +165,10 @@ export class GatewayService implements OnModuleDestroy {
         {
           schema: ms1WrappedSchema,
           executor: ms1Executor,
+        },
+        {
+          schema: ms2WrappedSchema,
+          executor: ms2Executor,
         },
         {
           schema: msiaWrappedSchema,

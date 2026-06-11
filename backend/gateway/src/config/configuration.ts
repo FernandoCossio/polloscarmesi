@@ -81,6 +81,10 @@ export default () => {
         graphqlUrl:
           process.env.MS2_GRAPHQL_URL ||
           'http://localhost:3001/graphql',
+
+        restUrl:
+          process.env.MS2_REST_URL ||
+          'http://localhost:3001',
       },
 
       ms3: {
