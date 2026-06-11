@@ -51,6 +51,42 @@ export class DeliveryProxyController {
     }
   }
 
+  @Post('chat/audio')
+  @UseInterceptors(FileInterceptor('file'))
+  async chatAudio(
+    @UploadedFile() file: any,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    try {
+      console.log('>>> [GATEWAY] Recibió solicitud chatAudio:', { hasFile: !!file });
+      const ms2RestUrl = this.configService.get<string>('microservices.ms2.restUrl') || 'http://localhost:3001';
+      const formData = new FormData();
+      if (file) {
+        formData.append('file', file.buffer, {
+          filename: file.originalname,
+          contentType: file.mimetype,
+        });
+      }
+
+      const headers: Record<string, string> = { ...formData.getHeaders() };
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
+      const response = await lastValueFrom(
+        this.httpService.post(`${ms2RestUrl}/api/v1/delivery/chat/audio`, formData.getBuffer(), { headers })
+      );
+      return response.data;
+    } catch (err) {
+      console.error('Error en gateway proxy chat-audio:', err.message);
+      if (err.response) {
+        console.error('Error desde ms-pedidos:', err.response.data);
+        throw new HttpException(err.response.data, err.response.status);
+      }
+      throw new InternalServerErrorException(err.message);
+    }
+  }
+
   @All('*path')
   async proxyDelivery(
     @Req() req: Request,
