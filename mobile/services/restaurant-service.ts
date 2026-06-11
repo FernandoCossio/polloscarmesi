@@ -168,6 +168,8 @@ export const RestaurantService = {
           id
           estado
           clienteId
+          clienteNombre
+          clienteTelefono
           direccionEntrega
           referencia
           latitud
@@ -180,6 +182,7 @@ export const RestaurantService = {
             id
             nombre
             coordenadasActuales
+            telefono
           }
           detalles {
             id
@@ -233,6 +236,7 @@ export const RestaurantService = {
           repartidorAsignado {
             id
             nombre
+            telefono
           }
           detalles {
             id
@@ -523,6 +527,7 @@ export const RestaurantService = {
           nombre
           disponible
           coordenadasActuales
+          telefono
         }
       }
     `;
