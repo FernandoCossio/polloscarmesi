@@ -64,6 +64,12 @@ public class UsuarioService {
         return mapToDto(guardado);
     }
 
+    public ResponseUsuarioDto obtenerUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        return mapToDto(usuario);
+    }
+    
     @Transactional(readOnly = true)
     public List<AdminUsuarioResponseDto> listarPersonal(RolNombre rol) {
         if (rol != null && !ROLES_PERSONAL.contains(rol)) {

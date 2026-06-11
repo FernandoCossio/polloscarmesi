@@ -12,6 +12,7 @@ import { GatewayService } from './gateway/gateway.service';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { AuthRestModule } from './auth-rest/auth-rest.module';
 import { ProductosProxyController } from './productos-proxy.controller';
+import { DeliveryProxyController } from './delivery-proxy.controller';
 import { PagosProxyController } from './pagos-proxy.controller';
 import { DocumentosProxyController } from './documentos-proxy.controller';
 import { UsuariosProxyController } from './usuarios-proxy.controller';
@@ -58,11 +59,9 @@ const logger = new Logger('AppModule');
     AuditModule,
     AuthRestModule,
   ],
-
   controllers: [
-    ProductosProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController, ComprobantesProxyController,
+    ProductosProxyController, DeliveryProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController, ComprobantesProxyController,
   ],
-
   providers: [
     {
       provide: APP_INTERCEPTOR,

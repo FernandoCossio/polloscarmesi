@@ -28,7 +28,31 @@ export class AuthRestService {
     this.ms4RestUrl = url;
   }
 
+  private handleAxiosError(error: any): never {
+    if (error.response) {
+      throw new HttpException(
+        error.response.data,
+        error.response.status,
+      );
+    } else if (error.request) {
+      throw new InternalServerErrorException('No se recibió respuesta del servicio de autenticación');
+    } else {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
   async login(loginRequest: LoginRequestDto): Promise<ApiResponse<TokenResponseDto>> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<ApiResponse<TokenResponseDto>>(
+          `${this.ms4RestUrl}/auth/login`,
+          loginRequest,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      this.handleAxiosError(error);
+    }
     try {
       const response = await firstValueFrom(
         this.httpService.post<ApiResponse<TokenResponseDto>>(
