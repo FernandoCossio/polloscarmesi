@@ -11,6 +11,7 @@ import com.restaurante.domain.enums.TipoPedido;
 import com.restaurante.domain.models.Documento;
 import com.restaurante.domain.models.Pago;
 import com.restaurante.domain.models.Producto;
+import com.restaurante.features.configuracion.ConfiguracionService;
 import com.restaurante.features.pago.PagoRepository;
 import com.restaurante.features.pago.PagoSpecifications;
 import com.restaurante.features.pedido.DetallePedidoRepository;
@@ -39,19 +40,22 @@ public class PdfReportService {
     private final DocumentoRepository documentoRepository;
     private final ImageStorageService imageStorageService;
     private final TemplateEngine templateEngine;
+    private final ConfiguracionService configuracionService;
 
     public PdfReportService(
             PagoRepository pagoRepository,
             DetallePedidoRepository detallePedidoRepository,
             DocumentoRepository documentoRepository,
             ImageStorageService imageStorageService,
-            TemplateEngine templateEngine
+            TemplateEngine templateEngine,
+            ConfiguracionService configuracionService
     ) {
         this.pagoRepository = pagoRepository;
         this.detallePedidoRepository = detallePedidoRepository;
         this.documentoRepository = documentoRepository;
         this.imageStorageService = imageStorageService;
         this.templateEngine = templateEngine;
+        this.configuracionService = configuracionService;
     }
 
     public String generateReciboPdf(Long pagoId) throws Exception {
@@ -62,6 +66,7 @@ public class PdfReportService {
         context.setVariable("pago", pago);
         context.setVariable("pedido", pago.getPedido());
         context.setVariable("detalles", pago.getPedido().getDetalles());
+        context.setVariable("configuracion", configuracionService.getConfiguracion());
 
         String htmlContent = templateEngine.process("reportes/recibo", context);
         byte[] pdfBytes = renderPdf(htmlContent);
