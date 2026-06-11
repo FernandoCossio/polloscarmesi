@@ -1,7 +1,24 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Linking, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Linking, Alert, Image } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { OrderStatus } from '../constants/orders';
+import { GATEWAY_URL } from '../services/auth-service';
+
+const getDisplayImageUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    try {
+      const gatewayUrl = GATEWAY_URL;
+      const gatewayHost = gatewayUrl.split('//')[1]?.split(':')[0];
+      if (gatewayHost && gatewayHost !== 'localhost' && gatewayHost !== '127.0.0.1') {
+        return url.replace('localhost', gatewayHost).replace('127.0.0.1', gatewayHost);
+      }
+    } catch (e) {
+      console.warn('Error replacing localhost in image URL:', e);
+    }
+  }
+  return url;
+};
 
 interface OrderItem {
   id: string;
@@ -15,6 +32,7 @@ interface OrderItem {
     nombre: string;
     telefono: string | null;
   };
+  evidenciaUrl?: string | null;
 }
 
 interface OrderCardProps {
@@ -25,6 +43,7 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ item, onTrackPress, getStatusColor, getStatusIcon }: OrderCardProps) {
+  const [showEvidence, setShowEvidence] = useState(false);
   const openWhatsApp = async (telefono: string) => {
     const cleanPhone = telefono.replace(/[^\d]/g, '');
     const url = `https://wa.me/${cleanPhone}`;
@@ -99,6 +118,32 @@ export function OrderCard({ item, onTrackPress, getStatusColor, getStatusIcon }:
               <Text style={styles.trackButtonText}>Mapa</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {item.estado === 'Entregado' && item.evidenciaUrl && (
+        <View style={styles.evidenceContainer}>
+          <TouchableOpacity
+            style={styles.evidenceButton}
+            onPress={() => setShowEvidence(!showEvidence)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons
+              name={showEvidence ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+              size={18}
+              color="#5D4037"
+            />
+            <Text style={styles.evidenceButtonText}>
+              {showEvidence ? "Ocultar foto de entrega" : "Ver foto de entrega"}
+            </Text>
+          </TouchableOpacity>
+          {showEvidence && (
+            <Image
+              source={{ uri: getDisplayImageUrl(item.evidenciaUrl) || '' }}
+              style={styles.evidenceImage}
+              resizeMode="cover"
+            />
+          )}
         </View>
       )}
     </View>
@@ -243,5 +288,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  evidenceContainer: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+    paddingTop: 12,
+    gap: 8,
+  },
+  evidenceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  evidenceButtonText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#5D4037',
+  },
+  evidenceImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginTop: 4,
+    backgroundColor: '#EEEEEE',
   },
 });

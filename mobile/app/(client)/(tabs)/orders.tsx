@@ -66,6 +66,7 @@ export default function OrdersScreen() {
           total: Number(pedido.total),
           estado: mapBackendStatusToMobile(pedido.estado),
           repartidor: repartidorInfo,
+          evidenciaUrl: pedido.evidenciaUrl || null,
         };
       });
 

@@ -233,6 +233,7 @@ export const RestaurantService = {
           subtotal
           total
           createdAt
+          evidenciaUrl
           repartidorAsignado {
             id
             nombre
