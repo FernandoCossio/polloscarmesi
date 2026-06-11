@@ -17,6 +17,7 @@ import { PagosProxyController } from './pagos-proxy.controller';
 import { DocumentosProxyController } from './documentos-proxy.controller';
 import { UsuariosProxyController } from './usuarios-proxy.controller';
 import { ComprobantesProxyController } from './comprobantes-proxy.controller';
+import { DashboardProxyController } from './dashboard-proxy.controller';
 
 const logger = new Logger('AppModule');
 
@@ -61,6 +62,7 @@ const logger = new Logger('AppModule');
   ],
   controllers: [
     ProductosProxyController, DeliveryProxyController, PagosProxyController, DocumentosProxyController, UsuariosProxyController, ComprobantesProxyController,
+    DashboardProxyController,
   ],
   providers: [
     {

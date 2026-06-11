@@ -1,0 +1,51 @@
+.table-card {
+  padding: 1rem;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-content-border-radius);
+}
+
+.avatar-circle {
+  background: var(--p-primary-50);
+  color: var(--p-primary-color);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 4px;
+
+  &.success {
+    background: var(--p-success-50);
+    color: var(--p-success-700);
+  }
+
+  &.warn {
+    background: var(--p-warning-50);
+    color: var(--p-warning-700);
+  }
+
+  &.info {
+    background: var(--p-info-50);
+    color: var(--p-info-700);
+  }
+
+  &.danger {
+    background: var(--p-danger-50);
+    color: var(--p-danger-700);
+  }
+
+  &.secondary {
+    background: var(--p-surface-100);
+    color: var(--p-surface-700);
+  }
+}

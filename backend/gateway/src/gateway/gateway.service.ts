@@ -112,12 +112,12 @@ export class GatewayService implements OnModuleDestroy {
       });
 
     const ms1Executor = crearExecutor(ms1GraphqlUrl);
-    const ms2Executor = crearExecutor(ms2GraphqlUrl);
+    // const ms2Executor = crearExecutor(ms2GraphqlUrl);
     const msiaExecutor = crearExecutor(msiaGraphqlUrl);
 
-    const [ms1RemoteSchema, ms2RemoteSchema, msiaRemoteSchema] = await Promise.all([
+    const [ms1RemoteSchema, /* ms2RemoteSchema, */ msiaRemoteSchema] = await Promise.all([
       schemaFromExecutor(ms1Executor),
-      schemaFromExecutor(ms2Executor),
+      // schemaFromExecutor(ms2Executor),
       schemaFromExecutor(msiaExecutor),
     ]);
 
@@ -127,11 +127,11 @@ export class GatewayService implements OnModuleDestroy {
       )}`,
     );
 
-    this.logger.debug(
-      `Campos detectados en MS2: ${Object.keys(
-        ms2RemoteSchema.getQueryType()?.getFields() ?? {},
-      )}`,
-    );
+    // this.logger.debug(
+    //   `Campos detectados en MS2: ${Object.keys(
+    //     ms2RemoteSchema.getQueryType()?.getFields() ?? {},
+    //   )}`,
+    // );
 
     this.logger.debug(
       `Consultas detectadas en MS-IA: ${Object.keys(
@@ -150,10 +150,10 @@ export class GatewayService implements OnModuleDestroy {
       executor: ms1Executor,
     });
 
-    const ms2WrappedSchema = wrapSchema({
-      schema: ms2RemoteSchema,
-      executor: ms2Executor,
-    });
+    // const ms2WrappedSchema = wrapSchema({
+    //   schema: ms2RemoteSchema,
+    //   executor: ms2Executor,
+    // });
 
     const msiaWrappedSchema = wrapSchema({
       schema: msiaRemoteSchema,
@@ -166,10 +166,10 @@ export class GatewayService implements OnModuleDestroy {
           schema: ms1WrappedSchema,
           executor: ms1Executor,
         },
-        {
-          schema: ms2WrappedSchema,
-          executor: ms2Executor,
-        },
+        // {
+        //   schema: ms2WrappedSchema,
+        //   executor: ms2Executor,
+        // },
         {
           schema: msiaWrappedSchema,
           executor: msiaExecutor,
