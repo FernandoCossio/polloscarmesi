@@ -7,23 +7,8 @@ import { RestaurantService } from '../../services/restaurant-service';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const ADDRESS_OPTIONS: {
-  id: string;
-  name: string;
-  address: string;
-  lat: number;
-  lon: number;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-}[] = [
-  { id: 'casa', name: 'Mi Casa', address: 'Av. Busch, Calle 4 #123, Santa Cruz', lat: -17.7833, lon: -63.1821, icon: 'home' },
-  { id: 'uagrm', name: 'UAGRM - FICCT', address: 'Av. Centenario (Facultad de Tecnología)', lat: -17.7756, lon: -63.1945, icon: 'school' },
-  { id: 'ventura', name: 'Ventura Mall', address: 'Av. San Martín, Equipetrol Norte', lat: -17.7595, lon: -63.1925, icon: 'local-mall' },
-];
-
-const DRIVER_PROFILES: Record<string, { name: string; email: string }> = {
-  '3': { name: 'Juan Pérez (Repartidor Principal)', email: 'repartidor@restaurante.com' },
-  '4': { name: 'Pedro Cajero (Cajero / Soporte)', email: 'cajero@restaurante.com' },
-};
+import { ADDRESS_OPTIONS } from '../../constants/addresses';
+import { DRIVER_PROFILES } from '../../constants/drivers';
 
 export default function CheckoutScreen() {
   const { items, cartTotal, clearCart } = useCart();
@@ -113,10 +98,15 @@ export default function CheckoutScreen() {
       if (repartidorSeleccionado !== 'auto' && repartidorSeleccionado !== 'none') {
         try {
           await RestaurantService.asignarRepartidor(order.id, repartidorSeleccionado);
-          const chosenProfile = DRIVER_PROFILES[repartidorSeleccionado];
-          const driverText = chosenProfile 
-            ? `${chosenProfile.name} (${chosenProfile.email})` 
-            : `Repartidor #${repartidorSeleccionado}`;
+          const chosenDriver = repartidores.find(r => String(r.id) === String(repartidorSeleccionado));
+          const profile = DRIVER_PROFILES[repartidorSeleccionado];
+          const driverName = chosenDriver?.nombre && !chosenDriver.nombre.startsWith('Repartidor #')
+            ? chosenDriver.nombre
+            : (profile?.name || `Repartidor #${repartidorSeleccionado}`);
+          const driverContact = chosenDriver?.telefono 
+            ? `Tel: ${chosenDriver.telefono}`
+            : (profile ? profile.email : '');
+          const driverText = driverContact ? `${driverName} (${driverContact})` : driverName;
           confirmationMessage += `\n\nAsignación MANUAL forzada a: ${driverText}.`;
         } catch (assignErr: any) {
           console.warn('Error al forzar la asignación del repartidor:', assignErr.message);
@@ -128,13 +118,17 @@ export default function CheckoutScreen() {
         const closest = getClosestDriver();
         if (closest) {
           const profile = DRIVER_PROFILES[closest.id.toString()];
-          const driverName = profile 
-            ? `${profile.name} (${profile.email})` 
-            : (closest.nombre || `Repartidor #${closest.id}`);
-          confirmationMessage += `\n\nAsignado AUTOMÁTICAMENTE por GPS a: ${driverName} (a ${closest.distance.toFixed(2)} km de ti).`;
+          const driverName = closest.nombre && !closest.nombre.startsWith('Repartidor #')
+            ? closest.nombre
+            : (profile?.name || closest.nombre || `Repartidor #${closest.id}`);
+          const driverContact = closest.telefono 
+            ? `Tel: ${closest.telefono}`
+            : (profile ? profile.email : '');
+          const contactStr = driverContact ? ` (${driverContact})` : '';
+          confirmationMessage += `\n\nAsignado AUTOMÁTICAMENTE por GPS a: ${driverName}${contactStr} (a ${closest.distance.toFixed(2)} km de ti).`;
         } else {
-          const profile3 = DRIVER_PROFILES['3'];
-          confirmationMessage += `\n\nAsignado al ${profile3.name} (${profile3.email}) como fallback por defecto.`;
+          const profile4 = DRIVER_PROFILES['4'];
+          confirmationMessage += `\n\nAsignado al ${profile4.name} (${profile4.email}) como fallback por defecto.`;
         }
       }
 
@@ -279,7 +273,7 @@ export default function CheckoutScreen() {
                 </Text>
                 {getClosestDriver() ? (
                   <Text style={styles.driverOptionSub}>
-                    Se sugerirá a: {DRIVER_PROFILES[getClosestDriver()?.id]?.name || getClosestDriver()?.nombre} (a {getClosestDriver()?.distance?.toFixed(2)} km de ti)
+                    Se sugerirá a: {getClosestDriver()?.nombre && !getClosestDriver()?.nombre.startsWith('Repartidor #') ? getClosestDriver()?.nombre : (DRIVER_PROFILES[String(getClosestDriver()?.id)]?.name || getClosestDriver()?.nombre || `Repartidor #${getClosestDriver()?.id}`)} (a {getClosestDriver()?.distance?.toFixed(2)} km de ti)
                   </Text>
                 ) : (
                   <Text style={styles.driverOptionSub}>
@@ -322,8 +316,12 @@ export default function CheckoutScreen() {
               }
 
               const profile = DRIVER_PROFILES[rep.id.toString()];
-              const driverName = profile ? profile.name : (rep.nombre || `Repartidor #${rep.id}`);
-              const driverEmail = profile ? profile.email : `ID: ${rep.id}`;
+              const driverName = rep.nombre && !rep.nombre.startsWith('Repartidor #')
+                ? rep.nombre 
+                : (profile?.name || rep.nombre || `Repartidor #${rep.id}`);
+              const infoText = rep.telefono 
+                ? `Teléfono: ${rep.telefono}`
+                : (profile ? `Email: ${profile.email}` : `ID: ${rep.id}`);
 
               return (
                 <TouchableOpacity
@@ -344,7 +342,7 @@ export default function CheckoutScreen() {
                       Asignar a: {driverName}
                     </Text>
                     <Text style={styles.driverOptionSub}>
-                      Email: {driverEmail} • Distancia: {distanceText}
+                      {infoText} • Distancia: {distanceText}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -356,21 +354,21 @@ export default function CheckoutScreen() {
               <TouchableOpacity
                 style={[
                   styles.driverOptionCard,
-                  repartidorSeleccionado === '3' && styles.activeDriverCard
+                  repartidorSeleccionado === '4' && styles.activeDriverCard
                 ]}
-                onPress={() => setRepartidorSeleccionado('3')}
+                onPress={() => setRepartidorSeleccionado('4')}
               >
                 <MaterialIcons
                   name="sports-motorsports"
                   size={22}
-                  color={repartidorSeleccionado === '3' ? '#B22222' : '#757575'}
+                  color={repartidorSeleccionado === '4' ? '#B22222' : '#757575'}
                 />
                 <View style={styles.driverOptionInfo}>
-                  <Text style={[styles.driverOptionName, repartidorSeleccionado === '3' && styles.activeDriverText]}>
-                    Simular: {DRIVER_PROFILES['3'].name}
+                  <Text style={[styles.driverOptionName, repartidorSeleccionado === '4' && styles.activeDriverText]}>
+                    Simular: {DRIVER_PROFILES['4']?.name || 'Repartidor Principal'}
                   </Text>
                   <Text style={styles.driverOptionSub}>
-                    Email: {DRIVER_PROFILES['3'].email} • Fuerza la asignación directa de desarrollo.
+                    Email: {DRIVER_PROFILES['4']?.email || 'repartidor@restaurante.com'} • Fuerza la asignación directa de desarrollo.
                   </Text>
                 </View>
               </TouchableOpacity>
