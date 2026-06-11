@@ -51,6 +51,12 @@ public class UsuarioService {
         return mapToDto(guardado);
     }
 
+    public ResponseUsuarioDto obtenerUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        return mapToDto(usuario);
+    }
+
     private ResponseUsuarioDto mapToDto(Usuario usuario) {
         return new ResponseUsuarioDto(
                 usuario.getUuid(),

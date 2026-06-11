@@ -43,6 +43,7 @@ public class JwtService {
 			.expiresAt(expiresAt)
 			.subject(usuarioPrincipal.getUsername())
 			.claim("roles", roles)
+			.claim("uid", usuarioPrincipal.getId())
 			.build();
 
 		return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
