@@ -1,5 +1,7 @@
 import { GATEWAY_URL, AuthService } from './auth-service';
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { FileSystemUploadType } from 'expo-file-system/legacy';
 
 export interface Categoria {
   id: string;
@@ -486,48 +488,42 @@ export const RestaurantService = {
 
   async confirmarEntrega(pedidoId: string, imageUri: string): Promise<any> {
     try {
+      if (!imageUri) {
+        throw new Error('La imagen de evidencia es requerida');
+      }
+
       const token = AuthService.getToken();
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const formData = new FormData();
-      formData.append('pedidoId', pedidoId);
-
-      if (imageUri) {
-        let cleanUri = imageUri;
-        if (Platform.OS === 'android') {
-          try {
-            // Decode once to turn double-encoded characters into single-encoded
-            cleanUri = decodeURIComponent(imageUri);
-            // Strip 'file://' prefix to treat it as a raw local file path
-            cleanUri = cleanUri.replace('file://', '');
-          } catch (e) {
-            console.warn('Error cleaning image URI:', e);
-          }
+      // Utilizar la subida nativa de FileSystem para saltarse las limitaciones
+      // de red del FormData de Javascript en Android
+      const uploadResult = await FileSystem.uploadAsync(
+        `${GATEWAY_URL}/api/v1/delivery/tracking/confirmar-entrega`,
+        imageUri,
+        {
+          fieldName: 'file',
+          httpMethod: 'POST',
+          uploadType: FileSystemUploadType.MULTIPART,
+          headers,
+          parameters: {
+            pedidoId: pedidoId,
+          },
         }
-        const uriParts = cleanUri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-        formData.append('file', {
-          uri: cleanUri,
-          name: `evidence-${pedidoId}.${fileType}`,
-          type: `image/${fileType === 'png' ? 'png' : 'jpeg'}`,
-        } as any);
+      );
+
+      if (uploadResult.status < 200 || uploadResult.status >= 300) {
+        let msg = 'Error al confirmar entrega con evidencia';
+        try {
+          const bodyJson = JSON.parse(uploadResult.body);
+          msg = bodyJson.message || msg;
+        } catch {}
+        throw new Error(msg);
       }
 
-      const response = await fetch(`${GATEWAY_URL}/api/v1/delivery/tracking/confirmar-entrega`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-
-      const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.message || 'Error al confirmar entrega con evidencia');
-      }
-
-      return json;
+      return JSON.parse(uploadResult.body);
     } catch (err) {
       console.error('Error confirming delivery with evidence:', err);
       throw err;
