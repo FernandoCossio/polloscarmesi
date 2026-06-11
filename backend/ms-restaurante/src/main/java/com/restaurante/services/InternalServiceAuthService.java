@@ -54,12 +54,12 @@ public class InternalServiceAuthService {
             );
         }
 
-        JsonNode responseBody = restClient.post()
+        ServiceTokenResponse responseBody = restClient.post()
                 .uri(authBaseUrl + "/auth/service-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ServiceTokenRequest(clientId, clientSecret))
                 .retrieve()
-                .body(JsonNode.class);
+                .body(ServiceTokenResponse.class);
 
         String accessToken = extractAccessToken(responseBody);
         cachedAccessToken = accessToken;
@@ -73,16 +73,16 @@ public class InternalServiceAuthService {
         return "Bearer " + getAccessToken();
     }
 
-    private String extractAccessToken(JsonNode responseBody) {
-        JsonNode accessTokenNode = responseBody != null
-                ? responseBody.path("data").path("accessToken")
+    private String extractAccessToken(ServiceTokenResponse responseBody) {
+        String accessToken = (responseBody != null && responseBody.data() != null)
+                ? responseBody.data().accessToken()
                 : null;
 
-        if (accessTokenNode == null || accessTokenNode.isMissingNode() || accessTokenNode.asText().isBlank()) {
+        if (accessToken == null || accessToken.isBlank()) {
             throw new IllegalStateException("Auth no devolvio un accessToken tecnico valido");
         }
 
-        return accessTokenNode.asText();
+        return accessToken;
     }
 
     private Instant extractExpiration(String accessToken) {
@@ -120,6 +120,16 @@ public class InternalServiceAuthService {
     private record ServiceTokenRequest(
             String clientId,
             String clientSecret
+    ) {
+    }
+
+    private record ServiceTokenResponse(
+            ServiceTokenData data
+    ) {
+    }
+
+    private record ServiceTokenData(
+            String accessToken
     ) {
     }
 }

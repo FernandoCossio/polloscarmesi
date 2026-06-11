@@ -5,7 +5,11 @@ from pathlib import Path
 from typing import Any
 
 import jwt
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Request, Security, status
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 from fastapi.security.utils import get_authorization_scheme_param
 from graphql import GraphQLError
 from strawberry.types import Info
@@ -20,6 +24,12 @@ JWT_ISSUER = os.getenv(
 JWT_PUBLIC_KEY_PATH_RAW = os.getenv(
     "JWT_PUBLIC_KEY_PATH",
     "certs/public.pem",
+)
+
+bearer_scheme = HTTPBearer(
+    auto_error=False,
+    scheme_name="BearerAuth",
+    description="Ingrese el token JWT con el formato: Bearer <token>",
 )
 
 
@@ -165,10 +175,14 @@ def obtener_usuario_opcional(
 
 
 def requerir_usuario_actual(
-    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Security(
+        bearer_scheme
+    ),
 ) -> UsuarioAutenticado:
-    token = obtener_token_desde_request(
-        request
+    token = (
+        credentials.credentials
+        if credentials is not None
+        else None
     )
 
     if token is None:

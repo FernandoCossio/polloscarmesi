@@ -1,5 +1,6 @@
 package com.restaurante.features.pedido;
 
+import com.restaurante.domain.dtos.ConfiguracionActualizadaEvent;
 import com.restaurante.domain.dtos.PedidoCreadoEvent;
 import com.restaurante.domain.dtos.PagoRegistradoEvent;
 import com.restaurante.domain.dtos.CocinaEstadoCambioEvent;
@@ -15,6 +16,7 @@ public class RedisEventPublisher {
     private static final String PEDIDO_CREADO_CHANNEL = "pedido.creado";
     private static final String PAGO_REGISTRADO_CHANNEL = "pago.registrado";
     private static final String COCINA_ESTADO_CHANNEL = "cocina.estado_cambiado";
+    private static final String CONFIGURACION_ACTUALIZADA_CHANNEL = "configuracion.actualizada";
 
     public RedisEventPublisher(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -44,6 +46,15 @@ public class RedisEventPublisher {
             redisTemplate.convertAndSend(COCINA_ESTADO_CHANNEL, event);
         } catch (Exception e) {
             log.error("Error al publicar evento cocina.estado_cambiado en Redis para pedido ID {}: {}", event.getPedidoId(), e.getMessage(), e);
+        }
+    }
+
+    public void publishConfiguracionActualizada(ConfiguracionActualizadaEvent event) {
+        try {
+            log.info("Publicando evento configuracion.actualizada para restaurante: {}", event.getNombreRestaurante());
+            redisTemplate.convertAndSend(CONFIGURACION_ACTUALIZADA_CHANNEL, event);
+        } catch (Exception e) {
+            log.error("Error al publicar evento configuracion.actualizada para restaurante {}: {}", event.getNombreRestaurante(), e.getMessage(), e);
         }
     }
 }

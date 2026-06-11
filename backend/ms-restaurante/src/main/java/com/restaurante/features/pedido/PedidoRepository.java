@@ -14,4 +14,5 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findAllByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
     List<Pedido> findAllByClienteId(Long clienteId, Pageable pageable);
     List<Pedido> findAllByEstadoIn(List<EstadoPedido> estados);
+    long countByEstadoIn(List<EstadoPedido> estados);
 }
