@@ -334,6 +334,8 @@ export const RestaurantService = {
           total
           clienteId
           createdAt
+          fechaCreacion
+          fechaEntrega
           detalles {
             id
             nombreProducto

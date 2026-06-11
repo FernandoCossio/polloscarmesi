@@ -18,10 +18,10 @@ export default function DriverHistory() {
     try {
       const data = await RestaurantService.obtenerPedidosPorRepartidor(user.id);
       
-      const historyData = data.filter((o: any) => o.estado === 'ENTREGADO');
+      const historyData = (data || []).filter((o: any) => o.estado === 'ENTREGADO');
 
       const formatted = historyData.map((pedido: any) => {
-        const itemsText = pedido.detalles
+        const itemsText = (pedido.detalles || [])
           .map((d: any) => `${d.cantidad}x ${d.nombreProducto}`)
           .join(', ');
 
@@ -89,7 +89,9 @@ export default function DriverHistory() {
         renderItem={({ item }) => (
           <View style={styles.orderCard}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderId}>Pedido #{item.id}</Text>
+              <Text style={styles.orderId} numberOfLines={1} ellipsizeMode="tail">
+                Pedido #{item.id.substring(0, 8).toUpperCase()}
+              </Text>
               <Text style={styles.orderStatus}>{item.estado}</Text>
             </View>
 

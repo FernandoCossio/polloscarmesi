@@ -55,7 +55,8 @@ export default function DriverDashboard() {
     try {
       let data: any[] = [];
       if (activeTab === 'mis_entregas') {
-        data = await RestaurantService.obtenerPedidosPorRepartidor(user.id);
+        const rawData = await RestaurantService.obtenerPedidosPorRepartidor(user.id);
+        data = rawData.filter((pedido: any) => pedido.estado !== 'ENTREGADO' && pedido.estado !== 'CANCELADO');
       } else {
         data = await RestaurantService.obtenerPedidosDeliverySinAsignar();
       }
