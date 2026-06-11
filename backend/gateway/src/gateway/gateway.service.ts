@@ -63,9 +63,9 @@ export class GatewayService implements OnModuleDestroy {
       'microservices.ms2.graphqlUrl',
     );
 
-    const msiaGraphqlUrl = this.configService.get<string>(
-      'microservices.msia.graphqlUrl',
-    );
+    // const msiaGraphqlUrl = this.configService.get<string>(
+    //   'microservices.msia.graphqlUrl',
+    // );
 
     if (!ms1GraphqlUrl) {
       throw new Error('MS1_GRAPHQL_URL is not configured');
@@ -75,16 +75,16 @@ export class GatewayService implements OnModuleDestroy {
       throw new Error('MS2_GRAPHQL_URL is not configured');
     }
 
-    if (!msiaGraphqlUrl) {
-      throw new Error('MSIA_GRAPHQL_URL is not configured');
-    }
+    // if (!msiaGraphqlUrl) {
+    //   throw new Error('MSIA_GRAPHQL_URL is not configured');
+    // }
 
     const subschemas: any[] = [];
 
-    // Load MS1, MS2 and MS-IA
+    // Load MS1 and MS2 (MS-IA disabled)
     this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
     this.logger.log(`Conectando a MS2: ${ms2GraphqlUrl}`);
-    this.logger.log(`Conectando a MS-IA: ${msiaGraphqlUrl}`);
+    // this.logger.log(`Conectando a MS-IA: ${msiaGraphqlUrl}`);
 
     const internalAuthorizationHeader =
       await this.internalServiceAuthService.getAuthorizationHeader();
@@ -113,12 +113,12 @@ export class GatewayService implements OnModuleDestroy {
 
     const ms1Executor = crearExecutor(ms1GraphqlUrl);
     // const ms2Executor = crearExecutor(ms2GraphqlUrl);
-    const msiaExecutor = crearExecutor(msiaGraphqlUrl);
+    // const msiaExecutor = crearExecutor(msiaGraphqlUrl);
 
-    const [ms1RemoteSchema, /* ms2RemoteSchema, */ msiaRemoteSchema] = await Promise.all([
+    const [ms1RemoteSchema] = await Promise.all([
       schemaFromExecutor(ms1Executor),
       // schemaFromExecutor(ms2Executor),
-      schemaFromExecutor(msiaExecutor),
+      // schemaFromExecutor(msiaExecutor),
     ]);
 
     this.logger.debug(
@@ -133,17 +133,17 @@ export class GatewayService implements OnModuleDestroy {
     //   )}`,
     // );
 
-    this.logger.debug(
-      `Consultas detectadas en MS-IA: ${Object.keys(
-        msiaRemoteSchema.getQueryType()?.getFields() ?? {},
-      )}`,
-    );
+    // this.logger.debug(
+    //   `Consultas detectadas en MS-IA: ${Object.keys(
+    //     msiaRemoteSchema.getQueryType()?.getFields() ?? {},
+    //   )}`,
+    // );
 
-    this.logger.debug(
-      `Mutaciones detectadas en MS-IA: ${Object.keys(
-        msiaRemoteSchema.getMutationType()?.getFields() ?? {},
-      )}`,
-    );
+    // this.logger.debug(
+    //   `Mutaciones detectadas en MS-IA: ${Object.keys(
+    //     msiaRemoteSchema.getMutationType()?.getFields() ?? {},
+    //   )}`,
+    // );
 
     const ms1WrappedSchema = wrapSchema({
       schema: ms1RemoteSchema,
@@ -155,10 +155,10 @@ export class GatewayService implements OnModuleDestroy {
     //   executor: ms2Executor,
     // });
 
-    const msiaWrappedSchema = wrapSchema({
-      schema: msiaRemoteSchema,
-      executor: msiaExecutor,
-    });
+    // const msiaWrappedSchema = wrapSchema({
+    //   schema: msiaRemoteSchema,
+    //   executor: msiaExecutor,
+    // });
 
     this.schema = stitchSchemas({
       subschemas: [
@@ -170,10 +170,10 @@ export class GatewayService implements OnModuleDestroy {
         //   schema: ms2WrappedSchema,
         //   executor: ms2Executor,
         // },
-        {
-          schema: msiaWrappedSchema,
-          executor: msiaExecutor,
-        },
+        // {
+        //   schema: msiaWrappedSchema,
+        //   executor: msiaExecutor,
+        // },
       ],
     });
 

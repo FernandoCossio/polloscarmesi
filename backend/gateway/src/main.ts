@@ -3,11 +3,35 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
+  const sslKeyPath = process.env.SSL_KEY_PATH;
+  const sslCertPath = process.env.SSL_CERT_PATH;
+  let httpsOptions: any = undefined;
+
+  if (sslKeyPath && sslCertPath) {
+    try {
+      const keyFullPath = path.resolve(process.cwd(), sslKeyPath);
+      const certFullPath = path.resolve(process.cwd(), sslCertPath);
+      if (fs.existsSync(keyFullPath) && fs.existsSync(certFullPath)) {
+        httpsOptions = {
+          key: fs.readFileSync(keyFullPath),
+          cert: fs.readFileSync(certFullPath),
+        };
+        logger.log(`SSL habilitado con certificados cargados.`);
+      } else {
+        logger.warn(`Archivos SSL especificados no existen: ${keyFullPath} o ${certFullPath}`);
+      }
+    } catch (err) {
+      logger.error(`Error cargando certificados SSL: ${err.message}`);
+    }
+  }
+
+  const app = await NestFactory.create(AppModule, httpsOptions ? { httpsOptions } : {});
   const configService = app.get(ConfigService);
 
   const base64UrlToBuffer = (input: string): Buffer => {
@@ -127,8 +151,9 @@ async function bootstrap() {
 
   const port = configService.get<number>('port') || 4000;
   await app.listen(port);
-  logger.log(`Gateway is running on http://localhost:${port}`);
-  logger.log(`GraphQL Playground: http://localhost:${port}/graphql`);
-  logger.log(`Swagger UI: http://localhost:${port}/api`);
+  const scheme = httpsOptions ? 'https' : 'http';
+  logger.log(`Gateway is running on ${scheme}://localhost:${scheme === 'https' ? '' : port}`);
+  logger.log(`GraphQL Playground: ${scheme}://localhost:${scheme === 'https' ? '' : port}/graphql`);
+  logger.log(`Swagger UI: ${scheme}://localhost:${scheme === 'https' ? '' : port}/api`);
 }
 bootstrap();

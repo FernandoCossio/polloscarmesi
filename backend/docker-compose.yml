@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/auth_restaurante
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - FRONTEND_URL=http://localhost:4200
+      - MAIL_USERNAME=tucuenta@gmail.com
+      - MAIL_PASSWORD=abcd efgh ijkl mnop
+      - APP_SERVICE_AUTH_CLIENTS=gateway=change-me0,ms-restaurante=change-me1,ms-ia=change-me3
+      - BASE_STORAGE_PATH=/app/storage
+      - APP_UPLOAD_DIR=/app/storage/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ms-restaurante:
+    build:
+      context: ./ms-restaurante
+      dockerfile: Dockerfile
+    container_name: restaurante-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/restaurante
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - FRONTEND_URL=http://localhost:4200
+      - MAIL_USERNAME=tucuenta@gmail.com
+      - MAIL_PASSWORD=abcd efgh ijkl mnop
+      - APP_STORAGE_TYPE=s3
+      - AWS_S3_ACCESS_KEY=test
+      - AWS_S3_SECRET_KEY=test
+      - AWS_S3_REGION=us-east-1
+      - AWS_S3_BUCKET=pollos-carmesi-storage
+      - AWS_S3_ENDPOINT=http://host.docker.internal:4566
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - AUTH_BASE_URL=http://auth:8081/api
+      - INTERNAL_AUTH_CLIENT_ID=ms-restaurante
+      - INTERNAL_AUTH_CLIENT_SECRET=change-me1
+      - INTERNAL_AUTH_CACHE_SKEW_SECONDS=60
+      - MS_IA_BASE_URL=http://ms-ia:8002/api
+      - BASE_STORAGE_PATH=/app/storage
+      - APP_UPLOAD_DIR=/app/storage/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ms-pedidos:
+    build:
+      context: ./ms-pedidos
+      dockerfile: Dockerfile
+    container_name: pedidos-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_HOST=host.docker.internal
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=0910
+      - DB_NAME=pedidos
+      - JWT_PUBLIC_KEY_PATH=certs/public.pem
+      - STORAGE_TYPE=local
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://host.docker.internal:4566
+      - AWS_S3_BUCKET_NAME=polloscarmesi-delivery-evidence
+      - DYNAMODB_EVENTS_TABLE=polloscarmesi-events
+      - DYNAMODB_GPS_TABLE=polloscarmesi-gps
+      - AUTH_SERVICE_URL=http://auth:8081/api
+      - MS1_REST_INTERNAL_URL=http://ms-restaurante:8082/api
+      - MS3_REST_INTERNAL_URL=http://ms-ia:8002/api
+      - GEMINI_API_KEY=
+      - GEMINI_MODEL=gemini-2.5-flash-lite
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway-service
+    ports:
+      - "443:4000"
+    environment:
+      - PORT=4000
+      - MS4_JWT_PUBLIC_KEY_PATH=./certs/public.pem
+      - MS1_GRAPHQL_URL=http://ms-restaurante:8082/api/graphql
+      - MS1_REST_URL=http://ms-restaurante:8082/api
+      - MS4_REST_URL=http://auth:8081/api
+      - MS2_GRAPHQL_URL=http://ms-pedidos:3001/graphql
+      - MS2_REST_URL=http://ms-pedidos:3001
+      - MS3_GRAPHQL_URL=http://ms-ia:8002/graphql
+      - SCHEMA_POLL_INTERVAL_MS=30000
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - DYNAMODB_ENDPOINT=http://host.docker.internal:4566
+      - DYNAMODB_AUDIT_TABLE=polloscarmesi-audit
+      - CORS_ORIGINS=http://localhost:4200,http://localhost:3000
+      - SSL_KEY_PATH=certs/ssl-key.pem
+      - SSL_CERT_PATH=certs/ssl-cert.pem
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+#  ms-ia:
+#    build:
+#      context: ./ms-ia
+#      dockerfile: Dockerfile
+#    container_name: ia-service
+#    ports:
+#      - "8002:8002"
+#    environment:
+#      - PORT=8002
+#      - AUTH_BASE_URL=http://auth:8081/api
+#      - INTERNAL_AUTH_CLIENT_ID=ms-ia
+#      - INTERNAL_AUTH_CLIENT_SECRET=change-me3
+#      - INTERNAL_AUTH_CACHE_SKEW_SECONDS=60
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
