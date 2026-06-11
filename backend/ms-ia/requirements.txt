@@ -10,3 +10,4 @@ joblib==1.5.3
 tensorflow==2.20.0
 pillow
 PyJWT[crypto]
+spacy
