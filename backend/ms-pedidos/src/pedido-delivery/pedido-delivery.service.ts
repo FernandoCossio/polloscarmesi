@@ -58,7 +58,7 @@ export class PedidoDeliveryService {
       return this.pedidoRepo.createQueryBuilder('pedido')
         .innerJoin('asignaciones', 'asig', 'asig.pedido_id = pedido.id')
         .where('asig.repartidor_id = :repartidorId', { repartidorId })
-        .andWhere('asig.estado = :estado', { estado: 'ASIGNADO' })
+        .andWhere('asig.estado IN (:...estados)', { estados: ['ASIGNADO', 'COMPLETADO'] })
         .leftJoinAndSelect('pedido.detalles', 'detalles')
         .orderBy('asig.asignado_at', 'DESC')
         .getMany();
