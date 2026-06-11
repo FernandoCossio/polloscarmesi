@@ -24,6 +24,7 @@ import { TrackingModule } from './tracking/tracking.module';
 import { IncidenciasModule } from './incidencias/incidencias.module';
 import { AutomatizacionModule } from './automatizacion/automatizacion.module';
 import { PedidoDeliveryModule } from './pedido-delivery/pedido-delivery.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { PedidoDeliveryModule } from './pedido-delivery/pedido-delivery.module';
     IncidenciasModule,
     AutomatizacionModule,
     PedidoDeliveryModule,
+    ChatModule,
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
