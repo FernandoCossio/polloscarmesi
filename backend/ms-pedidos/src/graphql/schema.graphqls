@@ -40,6 +40,8 @@ type PedidoDelivery {
   evidenciaEntregaUrl: String
   fechaCreacion: String!
   fechaEntrega: String
+  clienteNombre: String
+  clienteTelefono: String
 }
 
 type DetallePedidoDelivery {
