@@ -268,5 +268,77 @@
     "latitud": -17.7833,
     "longitud": -63.1821,
     "timestamp": "2026-06-10T19:37:08.878Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:02.015Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "EN_CAMINO",
+    "latitud": -17.784,
+    "longitud": -63.183,
+    "timestamp": "2026-06-11T03:20:02.015Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:06.063Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "EN_RUTA",
+    "latitud": -17.78232,
+    "longitud": -63.1853,
+    "timestamp": "2026-06-11T03:20:06.063Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:10.058Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "EN_RUTA",
+    "latitud": -17.78064,
+    "longitud": -63.187599999999996,
+    "timestamp": "2026-06-11T03:20:10.058Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:14.029Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "EN_RUTA",
+    "latitud": -17.77896,
+    "longitud": -63.1899,
+    "timestamp": "2026-06-11T03:20:14.029Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:18.042Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "EN_RUTA",
+    "latitud": -17.77728,
+    "longitud": -63.1922,
+    "timestamp": "2026-06-11T03:20:18.042Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:22.038Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "LLEGADA",
+    "latitud": -17.7756,
+    "longitud": -63.1945,
+    "timestamp": "2026-06-11T03:20:22.038Z"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-repartidor-2026-06-11T03:20:37.951Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "repartidorId": "repartidor",
+    "evento": "ENTREGADO",
+    "latitud": -17.7756,
+    "longitud": -63.1945,
+    "timestamp": "2026-06-11T03:20:37.951Z"
+  },
+  {
+    "id": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf-repartidor-2026-06-11T03:21:33.773Z",
+    "pedidoId": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf",
+    "repartidorId": "repartidor",
+    "evento": "EN_CAMINO",
+    "latitud": -17.784,
+    "longitud": -63.183,
+    "timestamp": "2026-06-11T03:21:33.773Z"
   }
 ]

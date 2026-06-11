@@ -285,5 +285,47 @@
     "evento": "ENTREGA_CONFIRMADA",
     "timestamp": "2026-06-10T19:37:08.885Z",
     "payload": "{\"repartidorId\":\"repartidor\",\"evidenciaUrl\":\"http://localhost:3001/uploads/evidencias/2026/06/10/efbb64a7-f936-45ca-8194-937bcfe33b75-1781120228824.jpeg\"}"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-2026-06-11T03:19:34.952Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "evento": "PEDIDO_CREADO",
+    "timestamp": "2026-06-11T03:19:34.952Z",
+    "payload": "{\"total\":118,\"clienteId\":5}"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-2026-06-11T03:19:53.010Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "evento": "REPARTIDOR_ASIGNADO",
+    "timestamp": "2026-06-11T03:19:53.010Z",
+    "payload": "{\"repartidorId\":4,\"asignacionId\":\"34028df9-5488-4dec-ae52-83645851f633\"}"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-2026-06-11T03:20:01.977Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "evento": "ESTADO_UPDATE",
+    "timestamp": "2026-06-11T03:20:01.977Z",
+    "payload": "{\"oldEstado\":\"CONFIRMADO\",\"nuevoEstado\":\"EN_CAMINO\"}"
+  },
+  {
+    "id": "cccbf16b-e996-4c4a-80c8-3fdfff52143b-2026-06-11T03:20:37.959Z",
+    "pedidoId": "cccbf16b-e996-4c4a-80c8-3fdfff52143b",
+    "evento": "ENTREGA_CONFIRMADA",
+    "timestamp": "2026-06-11T03:20:37.959Z",
+    "payload": "{\"repartidorId\":\"repartidor\",\"evidenciaUrl\":\"http://localhost:3001/uploads/evidencias/2026/06/11/cccbf16b-e996-4c4a-80c8-3fdfff52143b-1781148037919.jpeg\"}"
+  },
+  {
+    "id": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf-2026-06-11T03:21:30.161Z",
+    "pedidoId": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf",
+    "evento": "REPARTIDOR_ASIGNADO",
+    "timestamp": "2026-06-11T03:21:30.161Z",
+    "payload": "{\"repartidorId\":4,\"asignacionId\":\"631c418d-68d0-4b5e-aedd-62ab7661d052\"}"
+  },
+  {
+    "id": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf-2026-06-11T03:21:33.734Z",
+    "pedidoId": "5f61a3b1-f0c1-4c5e-a053-ccf42be71adf",
+    "evento": "ESTADO_UPDATE",
+    "timestamp": "2026-06-11T03:21:33.734Z",
+    "payload": "{\"oldEstado\":\"CONFIRMADO\",\"nuevoEstado\":\"EN_CAMINO\"}"
   }
 ]
