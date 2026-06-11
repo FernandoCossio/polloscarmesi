@@ -35,8 +35,8 @@ COPY --from=builder /app/certs ./certs
 # Create directories for static files and certificates to prevent crashes
 RUN mkdir -p certs uploads
 
-# Expose port (default is 3001)
-EXPOSE 3001
+# Expose port (default is 10000 for Render)
+EXPOSE 10000
 
 # Run the app
 CMD ["node", "dist/main"]
