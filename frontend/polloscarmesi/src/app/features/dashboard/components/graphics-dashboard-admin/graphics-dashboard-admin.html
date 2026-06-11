@@ -1,0 +1,48 @@
+<div class="graphics-grid">
+  
+  <!-- VENTAS POR HORA -->
+  <div class="chart-card-left">
+    <div class="flex align-items-center justify-content-between mb-4">
+      <h3 class="text-lg font-bold m-0" style="color: var(--p-text-color);">Ventas por Hora — Hoy</h3>
+      <!-- <span class="inline-flex align-items-center text-xs" style="color: var(--p-text-muted-color);">
+        <span class="w-2 h-2 mr-1" style="background: var(--p-primary-color); border-radius: 50%;"></span> Hoy
+      </span> -->
+    </div>
+    <div class="chart-container">
+      <p-chart *ngIf="chartData()" type="line" [data]="chartData()" [options]="chartOptions()" style="height: 100%; width: 100%;" />
+      <div *ngIf="!chartData()" class="flex align-items-center justify-content-center h-full text-sm" style="color: var(--p-text-muted-color);">
+        Cargando datos del gráfico de ventas...
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP 5 PRODUCTOS -->
+  <div class="chart-card-right">
+    <div>
+      <h3 class="text-lg font-bold mb-4" style="color: var(--p-text-color);">Top 5 Productos — Últimos 30 días</h3>
+      
+      <div class="products-list">
+        <div *ngFor="let item of topProductos; let i = index" class="product-item">
+          <div class="product-info" style="color: var(--p-text-color);">
+            <span>{{ i + 1 }}. {{ item.label }}</span>
+            <span style="color: var(--p-text-color);">{{ item.valor }} uds</span>
+          </div>
+          <!-- Bar container -->
+          <div class="progress-track">
+            <div class="progress-bar" 
+                 [ngStyle]="{
+                   'width': getPercent(item.valor) + '%',
+                   'background': i === 0 ? 'var(--p-primary-color)' : i === 1 ? 'var(--p-primary-400)' : 'var(--p-primary-300)'
+                 }">
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="topProductos.length === 0" class="flex align-items-center justify-content-center py-5 text-sm" style="color: var(--p-text-muted-color);">
+          No hay productos vendidos en los últimos 30 días.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

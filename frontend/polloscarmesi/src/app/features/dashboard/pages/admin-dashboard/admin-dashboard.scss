@@ -1,0 +1,13 @@
+.card {
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.spinner-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  min-height: 400px;
+}

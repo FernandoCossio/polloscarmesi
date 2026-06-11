@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
-public class LocalStorageServiceImpl implements ImageStorageService {
+public class LocalStorageServiceImpl implements StorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalStorageServiceImpl.class);
 

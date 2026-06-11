@@ -12,8 +12,7 @@ import com.restaurante.features.pago.exceptions.PagoNoEncontradoException;
 import com.restaurante.features.pedido.PedidoRepository;
 import com.restaurante.features.pedido.RedisEventPublisher;
 import com.restaurante.features.pedido.exceptions.PedidoNoEncontradoException;
-import com.restaurante.services.ImageStorageService;
-import com.restaurante.services.StorageOptions;
+import com.restaurante.services.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,16 +31,16 @@ public class PagoService {
 
     private final PagoRepository pagoRepository;
     private final PedidoRepository pedidoRepository;
-    private final ImageStorageService imageStorageService;
+    private final StorageService storageService;
     private final RedisEventPublisher redisEventPublisher;
 
     public PagoService(PagoRepository pagoRepository,
                        PedidoRepository pedidoRepository,
-                       ImageStorageService imageStorageService,
+                       StorageService storageService,
                        RedisEventPublisher redisEventPublisher) {
         this.pagoRepository = pagoRepository;
         this.pedidoRepository = pedidoRepository;
-        this.imageStorageService = imageStorageService;
+        this.storageService = storageService;
         this.redisEventPublisher = redisEventPublisher;
     }
 
@@ -113,7 +112,7 @@ public class PagoService {
 
         if (pago.getComprobanteUrl() != null) {
             try {
-                imageStorageService.delete(pago.getComprobanteUrl());
+                storageService.delete(pago.getComprobanteUrl());
             } catch (Exception e) {
                 log.warn("No se pudo borrar el comprobante anterior de pago ID {}: {}", id, e.getMessage());
             }
@@ -130,7 +129,7 @@ public class PagoService {
         String timestamp = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String customKey = String.format("comprobantes/%s/%d-%s.%s", datePath, id, timestamp, extension);
 
-        String savedPath = imageStorageService.store(file, customKey);
+        String savedPath = storageService.store(file, customKey);
         pago.setComprobanteUrl(savedPath);
         pago.setComprobanteS3Key(customKey);
         pago.setFechaSubida(now);
@@ -156,7 +155,7 @@ public class PagoService {
         String comprobanteUrl = pago.getComprobanteUrl();
         if (pago.getComprobanteS3Key() != null && !pago.getComprobanteS3Key().isBlank()) {
             try {
-                comprobanteUrl = imageStorageService.generatePresignedUrl(pago.getComprobanteS3Key());
+                comprobanteUrl = storageService.generatePresignedUrl(pago.getComprobanteS3Key());
             } catch (Exception e) {
                 log.warn("No se pudo generar la URL firmada para el pago ID {}: {}", pago.getId(), e.getMessage());
             }

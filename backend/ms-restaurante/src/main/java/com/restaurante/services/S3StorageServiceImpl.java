@@ -19,7 +19,7 @@ import java.util.UUID;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Service
-public class S3StorageServiceImpl implements ImageStorageService {
+public class S3StorageServiceImpl implements StorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(S3StorageServiceImpl.class);
 

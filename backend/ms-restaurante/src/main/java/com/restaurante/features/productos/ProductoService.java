@@ -9,8 +9,7 @@ import com.restaurante.domain.dtos.ProductoResponse;
 import com.restaurante.domain.models.Categoria;
 import com.restaurante.domain.models.Producto;
 import com.restaurante.features.categoria.CategoriaRepository;
-import com.restaurante.services.ImageStorageService;
-import com.restaurante.services.StorageOptions;
+import com.restaurante.services.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +26,14 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
-    private final ImageStorageService imageStorageService;
+    private final StorageService storageService;
 
     public ProductoService(ProductoRepository productoRepository,
                            CategoriaRepository categoriaRepository,
-                           ImageStorageService imageStorageService) {
+                           StorageService storageService) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
-        this.imageStorageService = imageStorageService;
+        this.storageService = storageService;
     }
 
     public List<ProductoResponse> findAll(Long categoriaId) {
@@ -123,7 +122,7 @@ public class ProductoService {
 
         if (producto.getImagenUrl() != null) {
             try {
-                imageStorageService.delete(producto.getImagenUrl());
+                storageService.delete(producto.getImagenUrl());
             } catch (IOException e) {
                 log.warn("No se pudo eliminar la imagen anterior del producto ID {}: {}", id, e.getMessage());
             }
@@ -136,7 +135,7 @@ public class ProductoService {
         }
         String customKey = "menu/productos/" + id + "." + extension;
 
-        String savedPath = imageStorageService.store(file, customKey);
+        String savedPath = storageService.store(file, customKey);
         producto.setImagenUrl(savedPath);
 
         Producto updated = productoRepository.save(producto);

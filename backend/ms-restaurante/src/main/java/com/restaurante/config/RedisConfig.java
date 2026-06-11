@@ -26,4 +26,20 @@ public class RedisConfig {
         template.afterPropertiesSet();
         return template;
     }
+
+    @Bean
+    public org.springframework.data.redis.listener.RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory connectionFactory,
+            org.springframework.data.redis.connection.MessageListener messageListener
+    ) {
+        org.springframework.data.redis.listener.RedisMessageListenerContainer container =
+                new org.springframework.data.redis.listener.RedisMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory);
+
+        container.addMessageListener(messageListener, new org.springframework.data.redis.listener.ChannelTopic("pedido.creado"));
+        container.addMessageListener(messageListener, new org.springframework.data.redis.listener.ChannelTopic("pago.registrado"));
+        container.addMessageListener(messageListener, new org.springframework.data.redis.listener.ChannelTopic("cocina.estado_cambiado"));
+
+        return container;
+    }
 }

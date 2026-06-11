@@ -1,8 +1,6 @@
 package com.restaurante.features.productos;
 
 import com.restaurante.domain.dtos.ProductoResponse;
-import com.restaurante.services.ImageStorageService;
-import com.restaurante.services.StorageOptions;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

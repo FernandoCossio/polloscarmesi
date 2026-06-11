@@ -1,0 +1,13 @@
+<div class="card p-4">
+  <app-header-dashboard-admin />
+  
+  <div *ngIf="loading()" class="spinner-container">
+    <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4" />
+  </div>
+
+  <div *ngIf="!loading()">
+    <app-stats-dashboard-admin [resumen]="resumen()" />
+    <app-graphics-dashboard-admin [ventasPorHora]="ventasPorHora()" [topProductos]="topProductos()" />
+    <app-table-dashboard-admin [pedidos]="pedidos()" />
+  </div>
+</div>
