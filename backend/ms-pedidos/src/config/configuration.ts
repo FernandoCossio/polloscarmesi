@@ -16,17 +16,21 @@ export default () => ({
     region: process.env.AWS_REGION || 'us-east-1',
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    s3BucketName: process.env.AWS_S3_BUCKET_NAME || 'polloscarmesi-delivery-evidence',
-    dynamoDbEventsTable: process.env.DYNAMODB_EVENTS_TABLE || 'polloscarmesi-events',
+    s3BucketName:
+      process.env.AWS_S3_BUCKET_NAME || 'polloscarmesi-delivery-evidence',
+    dynamoDbEventsTable:
+      process.env.DYNAMODB_EVENTS_TABLE || 'polloscarmesi-events',
     dynamoDbGpsTable: process.env.DYNAMODB_GPS_TABLE || 'polloscarmesi-gps',
     storageType: process.env.STORAGE_TYPE || 'local',
     endpointUrl: process.env.AWS_ENDPOINT_URL || '',
   },
   ms1: {
-    restInternalUrl: process.env.MS1_REST_INTERNAL_URL || 'http://localhost:8082/api',
+    restInternalUrl:
+      process.env.MS1_REST_INTERNAL_URL || 'http://localhost:8082/api',
   },
   ms3: {
-    restInternalUrl: process.env.MS3_REST_INTERNAL_URL || 'http://localhost:3002/api',
+    restInternalUrl:
+      process.env.MS3_REST_INTERNAL_URL || 'http://localhost:3002/api',
   },
   n8n: {
     secret: process.env.N8N_SECRET || 'n8n_consolidated_secret_2026',

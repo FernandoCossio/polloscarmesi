@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TrackingService } from './tracking.service';
 import { PuntoClaveDto } from './dto/punto-clave.dto';
@@ -36,7 +44,9 @@ export class TrackingController {
   ) {
     try {
       if (!file) {
-        throw new BadRequestException('El archivo de evidencia fotográfica es requerido');
+        throw new BadRequestException(
+          'El archivo de evidencia fotográfica es requerido',
+        );
       }
       const repartidorId = user?.userId;
       if (!repartidorId) {
@@ -52,9 +62,14 @@ export class TrackingController {
       );
       return { success: true, message: 'Entrega confirmada', pedido };
     } catch (err) {
-      console.error('CRITICAL ERROR in tracking.controller.ts (ms-pedidos):', err);
+      console.error(
+        'CRITICAL ERROR in tracking.controller.ts (ms-pedidos):',
+        err,
+      );
       if (err instanceof BadRequestException) throw err;
-      throw new BadRequestException(`Error interno en ms-pedidos: ${err.message}`);
+      throw new BadRequestException(
+        `Error interno en ms-pedidos: ${err.message}`,
+      );
     }
   }
 }

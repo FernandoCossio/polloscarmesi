@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { DetallePedidoDelivery } from './detalle-pedido-delivery.entity';
 
 export enum EstadoDelivery {
@@ -64,6 +71,8 @@ export class PedidoDelivery {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToMany(() => DetallePedidoDelivery, (detalle) => detalle.pedido, { cascade: true })
+  @OneToMany(() => DetallePedidoDelivery, (detalle) => detalle.pedido, {
+    cascade: true,
+  })
   detalles: DetallePedidoDelivery[];
 }

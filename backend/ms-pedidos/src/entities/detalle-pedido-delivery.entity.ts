@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { PedidoDelivery } from './pedido-delivery.entity';
 
 @Entity({ name: 'detalle_pedidos_delivery' })
@@ -6,7 +12,9 @@ export class DetallePedidoDelivery {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => PedidoDelivery, (pedido) => pedido.detalles, { onDelete: 'CASCADE' })
+  @ManyToOne(() => PedidoDelivery, (pedido) => pedido.detalles, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'pedido_id' })
   pedido: PedidoDelivery;
 

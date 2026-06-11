@@ -1,7 +1,15 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PedidoDelivery, EstadoDelivery } from '../entities/pedido-delivery.entity';
+import {
+  PedidoDelivery,
+  EstadoDelivery,
+} from '../entities/pedido-delivery.entity';
 import { AsignacionService } from '../asignacion/asignacion.service';
 import { S3Service } from '../infrastructure/s3/s3.service';
 import { DynamoDbService } from '../infrastructure/dynamodb/dynamodb.service';
@@ -35,7 +43,13 @@ export class TrackingService {
     }
 
     // 1. Log GPS point to DynamoDB
-    await this.dynamoDbService.logGps(pedidoId, repartidorId, evento, latitud, longitud);
+    await this.dynamoDbService.logGps(
+      pedidoId,
+      repartidorId,
+      evento,
+      latitud,
+      longitud,
+    );
 
     // 2. If event changes order state, update PostgreSQL and Redis
     let nuevoEstado: EstadoDelivery | null = null;
@@ -57,7 +71,9 @@ export class TrackingService {
       });
 
       // Log Event in DynamoDB
-      await this.dynamoDbService.logEvent(pedidoId, `ESTADO_${evento}`, { nuevoEstado });
+      await this.dynamoDbService.logEvent(pedidoId, `ESTADO_${evento}`, {
+        nuevoEstado,
+      });
 
       // Notify customer
       try {
@@ -68,15 +84,24 @@ export class TrackingService {
           { pedidoId },
         );
       } catch (err) {
-        this.logger.warn(`Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`);
+        this.logger.warn(
+          `Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`,
+        );
       }
     }
 
     // Also update driver's active GPS in availability repo
     try {
-      await this.asignacionService.actualizarDisponibilidad(repartidorId, undefined, latitud, longitud);
+      await this.asignacionService.actualizarDisponibilidad(
+        repartidorId,
+        undefined,
+        latitud,
+        longitud,
+      );
     } catch (err) {
-      this.logger.warn(`Failed to update driver availability GPS: ${err.message}`);
+      this.logger.warn(
+        `Failed to update driver availability GPS: ${err.message}`,
+      );
     }
   }
 
@@ -103,7 +128,11 @@ export class TrackingService {
       const timestamp = Date.now();
       const customKey = `evidencias/${dateStr}/${pedidoId}-${timestamp}.${extension}`;
 
-      const url = await this.s3Service.uploadFile(fileBuffer, customKey, mimetype);
+      const url = await this.s3Service.uploadFile(
+        fileBuffer,
+        customKey,
+        mimetype,
+      );
 
       // 2. Save order state
       pedido.estado = EstadoDelivery.ENTREGADO;
@@ -146,14 +175,18 @@ export class TrackingService {
           { pedidoId },
         );
       } catch (err) {
-        this.logger.warn(`Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`);
+        this.logger.warn(
+          `Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`,
+        );
       }
 
       return savedPedido;
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
       this.logger.error(`Error in confirmarEntrega: ${err.message}`, err.stack);
-      throw new BadRequestException(`Fallo al confirmar entrega: ${err.message}`);
+      throw new BadRequestException(
+        `Fallo al confirmar entrega: ${err.message}`,
+      );
     }
   }
 }

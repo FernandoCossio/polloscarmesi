@@ -25,7 +25,9 @@ export class NotificacionesService {
     expoPushToken: string,
     plataforma?: string,
   ): Promise<DispositivoToken> {
-    let tokenEntity = await this.tokenRepo.findOne({ where: { expoPushToken } });
+    let tokenEntity = await this.tokenRepo.findOne({
+      where: { expoPushToken },
+    });
 
     if (!tokenEntity) {
       tokenEntity = new DispositivoToken();
@@ -41,7 +43,9 @@ export class NotificacionesService {
   }
 
   async desactivarToken(expoPushToken: string): Promise<void> {
-    const tokenEntity = await this.tokenRepo.findOne({ where: { expoPushToken } });
+    const tokenEntity = await this.tokenRepo.findOne({
+      where: { expoPushToken },
+    });
     if (tokenEntity) {
       tokenEntity.activo = false;
       await this.tokenRepo.save(tokenEntity);
@@ -67,7 +71,9 @@ export class NotificacionesService {
     const messages: ExpoPushMessage[] = [];
     for (const t of tokens) {
       if (!Expo.isExpoPushToken(t.expoPushToken)) {
-        this.logger.warn(`Invalid Expo push token: ${t.expoPushToken}. Deactivating.`);
+        this.logger.warn(
+          `Invalid Expo push token: ${t.expoPushToken}. Deactivating.`,
+        );
         await this.desactivarToken(t.expoPushToken);
         continue;
       }
@@ -96,15 +102,20 @@ export class NotificacionesService {
         attempts++;
         try {
           const tickets = await this.expo.sendPushNotificationsAsync(chunk);
-          this.logger.log(`Push notifications chunk sent successfully. Tickets count: ${tickets.length}`);
+          this.logger.log(
+            `Push notifications chunk sent successfully. Tickets count: ${tickets.length}`,
+          );
           sentSuccessfully = true;
         } catch (err) {
-          this.logger.error(`Attempt ${attempts} failed to send push notification chunk: ${err.message}`);
+          this.logger.error(
+            `Attempt ${attempts} failed to send push notification chunk: ${err.message}`,
+          );
           if (attempts >= 3) {
             success = false;
           } else {
-            // exponential backoff
-            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempts) * 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.pow(2, attempts) * 1000),
+            );
           }
         }
       }

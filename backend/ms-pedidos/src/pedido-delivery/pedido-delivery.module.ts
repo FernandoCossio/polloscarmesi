@@ -11,7 +11,11 @@ import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PedidoDelivery, DetallePedidoDelivery, Incidencia]),
+    TypeOrmModule.forFeature([
+      PedidoDelivery,
+      DetallePedidoDelivery,
+      Incidencia,
+    ]),
     AsignacionModule,
     NotificacionesModule,
   ],

@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -15,7 +21,10 @@ export class JwtAuthGuard implements CanActivate {
 
   private loadPublicKey() {
     try {
-      const relPath = this.configService.get<string>('jwt.publicKeyPath', '../certs/public.pem');
+      const relPath = this.configService.get<string>(
+        'jwt.publicKeyPath',
+        '../certs/public.pem',
+      );
       const fullPath = path.resolve(process.cwd(), relPath);
       if (fs.existsSync(fullPath)) {
         this.publicKey = fs.readFileSync(fullPath, 'utf8');
@@ -38,12 +47,14 @@ export class JwtAuthGuard implements CanActivate {
 
     const match = authHeader.match(/^Bearer\s+(.+)$/i);
     if (!match) {
-      throw new UnauthorizedException('Invalid Authorization format. Use Bearer <token>');
+      throw new UnauthorizedException(
+        'Invalid Authorization format. Use Bearer <token>',
+      );
     }
 
     const token = match[1].trim();
     const user = this.verifyToken(token);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid or expired token');
     }
@@ -112,7 +123,9 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private getUserFromPayload(payload: any) {
-    const roles = Array.isArray(payload?.roles) ? payload.roles.filter((r: any) => typeof r === 'string') : [];
+    const roles = Array.isArray(payload?.roles)
+      ? payload.roles.filter((r: any) => typeof r === 'string')
+      : [];
     const role =
       typeof payload?.role === 'string'
         ? payload.role
@@ -141,7 +154,8 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private base64UrlToBuffer(input: string): Buffer {
-    const pad = input.length % 4 === 0 ? '' : '='.repeat(4 - (input.length % 4));
+    const pad =
+      input.length % 4 === 0 ? '' : '='.repeat(4 - (input.length % 4));
     const base64 = input.replace(/-/g, '+').replace(/_/g, '/') + pad;
     return Buffer.from(base64, 'base64');
   }

@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { PedidoDelivery, EstadoDelivery } from '../entities/pedido-delivery.entity';
+import {
+  PedidoDelivery,
+  EstadoDelivery,
+} from '../entities/pedido-delivery.entity';
 import { DetallePedidoDelivery } from '../entities/detalle-pedido-delivery.entity';
 import { Incidencia } from '../entities/incidencia.entity';
 import { AsignacionService } from '../asignacion/asignacion.service';
@@ -53,12 +61,17 @@ export class PedidoDeliveryService {
     });
   }
 
-  async obtenerPedidosPorRepartidor(repartidorId: number): Promise<PedidoDelivery[]> {
+  async obtenerPedidosPorRepartidor(
+    repartidorId: number,
+  ): Promise<PedidoDelivery[]> {
     return this.asignacionService.obtenerRepartidoresDisponibles().then(() => {
-      return this.pedidoRepo.createQueryBuilder('pedido')
+      return this.pedidoRepo
+        .createQueryBuilder('pedido')
         .innerJoin('asignaciones', 'asig', 'asig.pedido_id = pedido.id')
         .where('asig.repartidor_id = :repartidorId', { repartidorId })
-        .andWhere('asig.estado IN (:...estados)', { estados: ['ASIGNADO', 'COMPLETADO'] })
+        .andWhere('asig.estado IN (:...estados)', {
+          estados: ['ASIGNADO', 'COMPLETADO'],
+        })
         .leftJoinAndSelect('pedido.detalles', 'detalles')
         .orderBy('asig.asignado_at', 'DESC')
         .getMany();
@@ -88,8 +101,12 @@ export class PedidoDeliveryService {
       where: { createdAt: Between(start, end) },
     });
 
-    const entregados = pedidos.filter((p) => p.estado === EstadoDelivery.ENTREGADO);
-    const cancelados = pedidos.filter((p) => p.estado === EstadoDelivery.CANCELADO);
+    const entregados = pedidos.filter(
+      (p) => p.estado === EstadoDelivery.ENTREGADO,
+    );
+    const cancelados = pedidos.filter(
+      (p) => p.estado === EstadoDelivery.CANCELADO,
+    );
     const totalVentas = entregados.reduce((sum, p) => sum + Number(p.total), 0);
 
     const incidencias = await this.incidenciaRepo.count({
@@ -140,9 +157,10 @@ export class PedidoDeliveryService {
         nombre: d.nombreProducto,
         cantidad: d.cantidad,
       })),
-      coordenadasEntrega: savedPedido.latitud && savedPedido.longitud 
-        ? `${savedPedido.latitud},${savedPedido.longitud}` 
-        : null,
+      coordenadasEntrega:
+        savedPedido.latitud && savedPedido.longitud
+          ? `${savedPedido.latitud},${savedPedido.longitud}`
+          : null,
     });
 
     await this.dynamoDbService.logEvent(savedPedido.id, 'PEDIDO_CREADO', {
@@ -153,25 +171,37 @@ export class PedidoDeliveryService {
     if (!input.referencia?.includes('[MANUAL]')) {
       setTimeout(async () => {
         try {
-          await this.asignacionService.asignarRepartidorAutomaticamente(savedPedido);
+          await this.asignacionService.asignarRepartidorAutomaticamente(
+            savedPedido,
+          );
         } catch (err) {
-          this.logger.error(`Failed auto-assigning driver for Pedido ${savedPedido.id}: ${err.message}`);
+          this.logger.error(
+            `Failed auto-assigning driver for Pedido ${savedPedido.id}: ${err.message}`,
+          );
         }
       }, 1000);
     } else {
-      this.logger.log(`Skipping automatic driver assignment for Pedido ${savedPedido.id} (Manual mode triggered via reference)`);
+      this.logger.log(
+        `Skipping automatic driver assignment for Pedido ${savedPedido.id} (Manual mode triggered via reference)`,
+      );
     }
 
     return savedPedido;
   }
 
-  async actualizarEstado(id: string, estado: EstadoDelivery): Promise<PedidoDelivery> {
+  async actualizarEstado(
+    id: string,
+    estado: EstadoDelivery,
+  ): Promise<PedidoDelivery> {
     const pedido = await this.obtenerPedido(id);
     const oldEstado = pedido.estado;
     pedido.estado = estado;
     const saved = await this.pedidoRepo.save(pedido);
 
-    await this.dynamoDbService.logEvent(id, 'ESTADO_UPDATE', { oldEstado, nuevoEstado: estado });
+    await this.dynamoDbService.logEvent(id, 'ESTADO_UPDATE', {
+      oldEstado,
+      nuevoEstado: estado,
+    });
 
     await this.redisService.publish('delivery.estado', {
       pedidoId: id,
@@ -179,7 +209,10 @@ export class PedidoDeliveryService {
       timestamp: new Date().toISOString(),
     });
 
-    if (estado === EstadoDelivery.ENTREGADO || estado === EstadoDelivery.CANCELADO) {
+    if (
+      estado === EstadoDelivery.ENTREGADO ||
+      estado === EstadoDelivery.CANCELADO
+    ) {
       const isCompletado = estado === EstadoDelivery.ENTREGADO;
       await this.asignacionService.liberarRepartidorPorPedido(id, isCompletado);
     }
@@ -192,7 +225,9 @@ export class PedidoDeliveryService {
         { pedidoId: id, estado },
       );
     } catch (err) {
-      this.logger.warn(`Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`);
+      this.logger.warn(
+        `Failed to send push notification to customer ${pedido.clienteId}: ${err.message}`,
+      );
     }
 
     return saved;
@@ -202,7 +237,9 @@ export class PedidoDeliveryService {
     const pedido = await this.obtenerPedido(id);
 
     if (pedido.estado !== EstadoDelivery.PENDIENTE) {
-      throw new BadRequestException('El pedido solo puede ser cancelado antes de ser asignado y confirmado.');
+      throw new BadRequestException(
+        'El pedido solo puede ser cancelado antes de ser asignado y confirmado.',
+      );
     }
 
     return this.actualizarEstado(id, EstadoDelivery.CANCELADO);

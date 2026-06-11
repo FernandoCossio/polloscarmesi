@@ -8,7 +8,11 @@ import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Asignacion, RepartidorDisponibilidad, PedidoDelivery]),
+    TypeOrmModule.forFeature([
+      Asignacion,
+      RepartidorDisponibilidad,
+      PedidoDelivery,
+    ]),
     NotificacionesModule,
   ],
   providers: [AsignacionService],
