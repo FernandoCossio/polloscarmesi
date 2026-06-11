@@ -15,6 +15,40 @@ export default function DriverDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Preparando':
+        return '#FF9800'; // Naranja
+      case 'Asignado':
+        return '#FFC107'; // Ámbar
+      case 'En camino':
+        return '#2196F3'; // Azul
+      case 'Entregado':
+        return '#4CAF50'; // Verde
+      case 'Cancelado':
+        return '#D32F2F'; // Rojo
+      default:
+        return '#9E9E9E'; // Gris
+    }
+  };
+
+  const getStatusIcon = (status: string): any => {
+    switch (status) {
+      case 'Preparando':
+        return 'hourglass-empty';
+      case 'Asignado':
+        return 'assignment-ind';
+      case 'En camino':
+        return 'local-shipping';
+      case 'Entregado':
+        return 'check-circle';
+      case 'Cancelado':
+        return 'block';
+      default:
+        return 'help-outline';
+    }
+  };
+
   const fetchOrders = useCallback(async (showLoading = true) => {
     if (!user?.id) return;
     if (showLoading) setIsLoading(true);
@@ -132,8 +166,15 @@ export default function DriverDashboard() {
         renderItem={({ item }) => (
           <View style={styles.orderCard}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderId}>Pedido #{item.id.slice(0, 8)}...</Text>
-              <Text style={styles.orderStatus}>{item.estado}</Text>
+              <Text style={styles.orderId} numberOfLines={1} ellipsizeMode="tail">
+                Pedido #{item.id.substring(0, 8).toUpperCase()}
+              </Text>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.estado) + '15' }]}>
+                <MaterialIcons name={getStatusIcon(item.estado)} size={12} color={getStatusColor(item.estado)} />
+                <Text style={[styles.statusText, { color: getStatusColor(item.estado) }]}>
+                  {item.estado}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.infoRow}>
@@ -275,15 +316,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#3E2723',
+    flex: 1,
+    marginRight: 8,
   },
-  orderStatus: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF9800',
-    backgroundColor: '#FFF3E0',
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   infoRow: {
     flexDirection: 'row',

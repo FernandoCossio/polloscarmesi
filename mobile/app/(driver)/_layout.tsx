@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stack } from 'expo-router';
+import { TouchableOpacity, Text } from 'react-native';
 
 export default function DriverLayout() {
   return (
@@ -10,7 +11,18 @@ export default function DriverLayout() {
         headerTitleStyle: { fontWeight: 'bold' },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Entregas Pendientes' }} />
+      <Stack.Screen 
+        name="index" 
+        options={({ navigation }) => ({ 
+          title: 'Entregas Pendientes',
+          headerRight: () => (
+            <TouchableOpacity onPress={() => navigation.navigate('history')}>
+              <Text style={{ color: '#fff', marginRight: 15, fontWeight: 'bold' }}>Historial</Text>
+            </TouchableOpacity>
+          )
+        })} 
+      />
+      <Stack.Screen name="history" options={{ title: 'Historial de Entregas' }} />
       <Stack.Screen name="order-detail/[id]" options={{ title: 'Detalle de Entrega' }} />
     </Stack>
   );

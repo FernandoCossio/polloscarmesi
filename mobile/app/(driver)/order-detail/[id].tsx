@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ORDER_STATUS, OrderStatus, mapBackendStatusToMobile } from '../../../constants/orders';
 import { RestaurantService } from '../../../services/restaurant-service';
 import * as ImagePicker from 'expo-image-picker';
+import { MapSimulation } from '../../../components/MapSimulation';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +16,74 @@ export default function OrderDetailScreen() {
   const [estado, setEstado] = useState<OrderStatus>(ORDER_STATUS.ASIGNADO);
   const [imageUri, setImageUri] = useState<string | null>(null);
 
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simProgress, setSimProgress] = useState(0);
+  const [currentCoords, setCurrentCoords] = useState<string>('');
+  const simIntervalRef = useRef<any>(null);
+
+  const startSimulation = () => {
+    if (!order) return;
+    setIsSimulating(true);
+    setSimProgress(0);
+    setIsLoading(false);
+
+    const startLat = -17.7840;
+    const startLon = -63.1830;
+    const destLat = order.lat;
+    const destLon = order.lon;
+
+    let step = 0;
+    const totalSteps = 5;
+
+    // Enviar primer punto clave de inicio
+    RestaurantService.registrarPuntoClave(id, startLat, startLon, 'EN_CAMINO').catch((err) =>
+      console.warn('Error al enviar punto clave de inicio:', err.message)
+    );
+    setCurrentCoords(`${startLat.toFixed(4)}, ${startLon.toFixed(4)}`);
+
+    const interval = setInterval(async () => {
+      step += 1;
+      const progressPercent = (step / totalSteps) * 100;
+      setSimProgress(progressPercent);
+
+      // Calcular interpolación lineal
+      const currentLat = startLat + (destLat - startLat) * (step / totalSteps);
+      const currentLon = startLon + (destLon - startLon) * (step / totalSteps);
+      
+      const coordsString = `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
+      setCurrentCoords(coordsString);
+
+      // Enviar coordenadas intermedias al backend
+      const eventName = step === totalSteps ? 'LLEGADA' : 'EN_RUTA';
+      try {
+        await RestaurantService.registrarPuntoClave(id, currentLat, currentLon, eventName);
+      } catch (err: any) {
+        console.warn(`Error enviando coordenadas de paso ${step}:`, err.message);
+      }
+
+      if (step >= totalSteps) {
+        if (simIntervalRef.current) {
+          clearInterval(simIntervalRef.current);
+          simIntervalRef.current = null;
+        }
+        setIsSimulating(false);
+        Alert.alert(
+          '¡Has llegado a tu destino!',
+          'Por favor, toma la fotografía de evidencia para confirmar la entrega del pedido.'
+        );
+      }
+    }, 4000); // Cada 4 segundos
+    simIntervalRef.current = interval;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+      }
+    };
+  }, []);
+
   const fetchOrderDetail = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
@@ -22,9 +91,11 @@ export default function OrderDetailScreen() {
       const data = await RestaurantService.obtenerPedidoDelivery(id);
       
       const formatted = {
-        cliente: `Cliente #${data.clienteId}`,
-        telefono: '+591 76543210',
+        cliente: data.clienteNombre || `Cliente #${data.clienteId}`,
+        telefono: data.clienteTelefono || null,
         direccion: data.direccionEntrega,
+        lat: Number(data.latitud) || -17.7833,
+        lon: Number(data.longitud) || -63.1821,
         productos: data.detalles.map((d: any) => ({
           nombre: d.nombreProducto,
           cantidad: d.cantidad,
@@ -39,6 +110,10 @@ export default function OrderDetailScreen() {
 
       setOrder(formatted);
       setEstado(formatted.estado);
+      if (formatted.estado === ORDER_STATUS.EN_CAMINO) {
+        setSimProgress(100);
+        setCurrentCoords(`${formatted.lat.toFixed(4)}, ${formatted.lon.toFixed(4)}`);
+      }
     } catch (err) {
       console.error('Error fetching order details:', err);
     } finally {
@@ -91,10 +166,9 @@ export default function OrderDetailScreen() {
       setIsLoading(true);
       await RestaurantService.actualizarEstadoDelivery(id, 'EN_CAMINO');
       setEstado(ORDER_STATUS.EN_CAMINO);
-      Alert.alert('Entrega Iniciada', 'El pedido ahora está marcado "En camino". El cliente podrá ver tu avance.');
+      startSimulation();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'No se pudo iniciar la entrega');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -126,6 +200,16 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const openWhatsApp = async (telefono: string) => {
+    const cleanPhone = telefono.replace(/[^\d]/g, '');
+    const url = `https://wa.me/${cleanPhone}`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Error', 'No se pudo abrir WhatsApp o no está instalado.');
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -143,9 +227,20 @@ export default function OrderDetailScreen() {
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialIcons name="phone" size={20} color="#5D4037" />
-              <View>
-                <Text style={styles.infoLabel}>Teléfono</Text>
-                <Text style={styles.infoValue}>{order.telefono}</Text>
+              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={styles.infoLabel}>Teléfono</Text>
+                  <Text style={styles.infoValue}>{order.telefono || 'Sin teléfono registrado'}</Text>
+                </View>
+                {order.telefono && (
+                  <TouchableOpacity
+                    style={styles.whatsappBadge}
+                    onPress={() => openWhatsApp(order.telefono)}
+                  >
+                    <MaterialIcons name="chat" size={14} color="#fff" />
+                    <Text style={styles.whatsappBadgeText}>WhatsApp</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
             <View style={styles.divider} />
@@ -187,8 +282,21 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Foto de Evidencia */}
+        {/* Mapa y Simulación para el Repartidor */}
         {estado === ORDER_STATUS.EN_CAMINO && (
+          <MapSimulation
+            estado={estado}
+            latitud={order.lat}
+            longitud={order.lon}
+            isSimulating={isSimulating}
+            simProgressOverride={simProgress}
+            currentCoordsOverride={currentCoords}
+            showSimulationHeader={true}
+          />
+        )}
+
+        {/* Foto de Evidencia */}
+        {estado === ORDER_STATUS.EN_CAMINO && !isSimulating && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Evidencia de Entrega</Text>
             <View style={styles.card}>
@@ -220,7 +328,7 @@ export default function OrderDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {estado === ORDER_STATUS.EN_CAMINO && (
+          {estado === ORDER_STATUS.EN_CAMINO && !isSimulating && (
             <TouchableOpacity style={styles.completeButton} onPress={handleFinishDelivery}>
               <MaterialIcons name="check" size={22} color="#fff" />
               <Text style={styles.buttonText}>Marcar como Entregado</Text>
@@ -450,5 +558,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#3E2723',
     fontWeight: '500',
+  },
+  whatsappBadge: {
+    backgroundColor: '#25D366', // Verde de WhatsApp
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  whatsappBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });
