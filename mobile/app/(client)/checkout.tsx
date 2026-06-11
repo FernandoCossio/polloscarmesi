@@ -6,6 +6,7 @@ import { useAuth } from '../../context/auth-context';
 import { RestaurantService } from '../../services/restaurant-service';
 import { ThemedView } from '@/components/themed-view';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Location from 'expo-location';
 
 import { ADDRESS_OPTIONS } from '../../constants/addresses';
 import { DRIVER_PROFILES } from '../../constants/drivers';
@@ -14,11 +15,76 @@ export default function CheckoutScreen() {
   const { items, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'qr'>('efectivo');
-  const [selectedAddress, setSelectedAddress] = useState(ADDRESS_OPTIONS[0]);
+  const [selectedAddress, setSelectedAddress] = useState<any>(ADDRESS_OPTIONS[0]);
   const [repartidores, setRepartidores] = useState<any[]>([]);
   const [repartidorSeleccionado, setRepartidorSeleccionado] = useState<string>('auto');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gpsLocation, setGpsLocation] = useState<any>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const router = useRouter();
+
+  const handleGetGpsLocation = async () => {
+    setGpsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permiso denegado',
+          'Para usar tu ubicación GPS real, debes habilitar los permisos en los ajustes de tu celular.'
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude, longitude } = location.coords;
+      let addressString = `Coordenadas (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+
+      try {
+        const [geocode] = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
+
+        if (geocode) {
+          const street = geocode.street || '';
+          const name = geocode.name || '';
+          const city = geocode.city || '';
+          const streetNumber = geocode.streetNumber ? ` #${geocode.streetNumber}` : '';
+          
+          if (street || name) {
+            addressString = `${street || name}${streetNumber}, ${city}`;
+          }
+        }
+      } catch (geocodeErr) {
+        console.warn('Geocode reverse resolution failed:', geocodeErr);
+      }
+
+      const newGpsLoc = {
+        id: 'gps',
+        name: 'Ubicación GPS',
+        address: addressString,
+        lat: latitude,
+        lon: longitude,
+        icon: 'my-location' as const,
+      };
+
+      setGpsLocation(newGpsLoc);
+      setSelectedAddress(newGpsLoc);
+
+      Alert.alert(
+        '¡Ubicación cargada!',
+        `GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}\nSe actualizó la distancia al repartidor más cercano.`
+      );
+    } catch (err: any) {
+      console.error('GPS error:', err);
+      Alert.alert('Error', err.message || 'No se pudo obtener la ubicación GPS real del hardware.');
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // km
@@ -156,10 +222,60 @@ export default function CheckoutScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Dirección de Entrega (Simulador de GPS) */}
+        {/* Dirección de Entrega (Simulador de GPS + GPS Real) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Dirección de Entrega</Text>
+          
+          <View style={styles.gpsButtonContainer}>
+            <TouchableOpacity 
+              style={styles.gpsButton} 
+              onPress={handleGetGpsLocation} 
+              disabled={gpsLoading}
+              activeOpacity={0.8}
+            >
+              {gpsLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <MaterialIcons name="my-location" size={18} color="#fff" />
+              )}
+              <Text style={styles.gpsButtonText}>
+                {gpsLoading ? "Obteniendo coordenadas por GPS..." : "Usar ubicación GPS actual"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.addressOptionsContainer}>
+            {gpsLocation && (
+              <TouchableOpacity
+                key={gpsLocation.id}
+                style={[
+                  styles.addressOptionCard,
+                  selectedAddress.id === gpsLocation.id && styles.activeAddressOption,
+                  { borderColor: selectedAddress.id === gpsLocation.id ? '#2E7D32' : '#E0E0E0' }
+                ]}
+                onPress={() => setSelectedAddress(gpsLocation)}
+              >
+                <MaterialIcons
+                  name={gpsLocation.icon}
+                  size={20}
+                  color={selectedAddress.id === gpsLocation.id ? '#2E7D32' : '#2E7D32'}
+                />
+                <Text style={[
+                  styles.addressOptionName, 
+                  selectedAddress.id === gpsLocation.id && { color: '#2E7D32' },
+                  { color: '#2E7D32' }
+                ]}>
+                  {gpsLocation.name}
+                </Text>
+                <Text style={styles.addressOptionText} numberOfLines={1}>
+                  {gpsLocation.address}
+                </Text>
+                <Text style={styles.addressOptionCoords}>
+                  Lat: {gpsLocation.lat.toFixed(4)}, Lon: {gpsLocation.lon.toFixed(4)}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {ADDRESS_OPTIONS.map((addr) => (
               <TouchableOpacity
                 key={addr.id}
@@ -632,5 +748,27 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#9E9E9E',
     marginTop: 4,
+  },
+  gpsButtonContainer: {
+    marginBottom: 10,
+  },
+  gpsButton: {
+    backgroundColor: '#2E7D32',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+  },
+  gpsButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
