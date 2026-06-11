@@ -44,11 +44,15 @@ export class GatewayService implements OnModuleDestroy {
 
   async loadSchemas() {
     const ms1GraphqlUrl = this.configService.get<string>('microservices.ms1.graphqlUrl');
+    const ms2GraphqlUrl = this.configService.get<string>('microservices.ms2.graphqlUrl');
+
     if (!ms1GraphqlUrl) throw new Error('MS1_GRAPHQL_URL is not configured');
 
-    this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
+    const subschemas: any[] = [];
 
-    const executor = buildHTTPExecutor({
+    // Load MS1
+    this.logger.log(`Conectando a MS1: ${ms1GraphqlUrl}`);
+    const executor1 = buildHTTPExecutor({
       endpoint: ms1GraphqlUrl,
       headers: ({ context }: any) => {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -58,21 +62,52 @@ export class GatewayService implements OnModuleDestroy {
         return headers;
       },
     });
+    try {
+      const remoteSchema1 = await schemaFromExecutor(executor1);
+      const wrappedSchema1 = wrapSchema({ schema: remoteSchema1, executor: executor1 });
+      subschemas.push({ schema: wrappedSchema1, executor: executor1 });
+      this.logger.log('MS1 schema cargado con éxito');
+    } catch (error) {
+      this.logger.error(`Error cargando MS1 schema: ${error.message}`);
+      throw error;
+    }
 
-    const remoteSchema = await schemaFromExecutor(executor);
+    // Load MS2
+    if (ms2GraphqlUrl) {
+      this.logger.log(`Conectando a MS2: ${ms2GraphqlUrl}`);
+      const executor2 = buildHTTPExecutor({
+        endpoint: ms2GraphqlUrl,
+        headers: ({ context }: any) => {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (context?.req?.headers?.authorization) {
+            headers['Authorization'] = context.req.headers.authorization;
+          }
+          return headers;
+        },
+      });
+      try {
+        const remoteSchema2 = await schemaFromExecutor(executor2);
+        const wrappedSchema2 = wrapSchema({ schema: remoteSchema2, executor: executor2 });
+        subschemas.push({ schema: wrappedSchema2, executor: executor2 });
+        this.logger.log('MS2 schema cargado con éxito');
+      } catch (error) {
+        this.logger.error(`Error cargando MS2 schema: ${error.message}`);
+        throw error;
+      }
+    }
+
+    if (subschemas.length === 2 || (subschemas.length === 1 && !ms2GraphqlUrl)) {
+      this.schema = stitchSchemas({
+        subschemas,
+        mergeTypes: true,
+      });
+      this.logger.log('Schemas stitched y actualizados.');
+    } else {
+      this.logger.warn('No se pudieron cargar todos los subschemas. Se mantiene el schema anterior.');
+    }
 
     this.logger.debug(
-      `Campos detectados en MS1: ${Object.keys(remoteSchema.getQueryType()?.getFields() ?? {})}`,
-    );
-
-    const wrappedSchema = wrapSchema({ schema: remoteSchema, executor });
-
-    this.schema = stitchSchemas({
-      subschemas: [{ schema: wrappedSchema, executor }],
-    });
-
-    this.logger.debug(
-      `Schema listo: ${Object.keys(this.schema.getQueryType()?.getFields() ?? {})}`,
+      `Schema unificado listo. Queries disponibles: ${Object.keys(this.schema.getQueryType()?.getFields() ?? {})}`,
     );
   }
 
