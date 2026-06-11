@@ -7,14 +7,14 @@
   <div class="filters-grid">
     <!-- Fecha Inicio -->
     <div class="filter-field">
-      <label>Fecha Inicio</label>
-      <p-datePicker [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full"></p-datePicker>
+       <label>Fecha Inicio</label>
+       <p-datePicker [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full" [minDate]="minDate" [maxDate]="maxDate" [readonlyInput]="isCajero"></p-datePicker>
     </div>
 
     <!-- Fecha Fin -->
     <div class="filter-field">
-      <label>Fecha Fin</label>
-      <p-datePicker [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full"></p-datePicker>
+       <label>Fecha Fin</label>
+       <p-datePicker [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="true" hourFormat="24" styleClass="w-full" [minDate]="minDate" [maxDate]="maxDate" [readonlyInput]="isCajero"></p-datePicker>
     </div>
 
     <!-- Saldo Inicial -->
